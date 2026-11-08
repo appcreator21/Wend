@@ -35,3 +35,5 @@ No framework: the site is static. `tools/build-site.sh` copies `index.html`, `sr
 
 - **Git integration:** Workers & Pages -> Create -> Pages -> connect this repo. Build command `sh tools/build-site.sh`, output directory `dist`.
 - **CLI:** `sh tools/build-site.sh && npx wrangler pages deploy dist --project-name wend` (needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`).
+- **API only (no asset upload token):** `node tools/make-worker.js`, then POST `worker/_worker.js` as the `_worker.js` part (with `manifest={}`) to
+  `/accounts/<id>/pages/projects/wend/deployments`. The worker serves every file from memory (~90KB), which is how the current site is deployed.
