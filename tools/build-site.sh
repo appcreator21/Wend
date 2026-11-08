@@ -4,6 +4,6 @@ set -e
 cd "$(dirname "$0")/.."
 rm -rf dist
 mkdir -p dist
-cp -r index.html src data dist/
+cp -r index.html manifest.webmanifest src data icons dist/
 printf '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n' > dist/_headers
 echo "built dist/ ($(du -sh dist | cut -f1))"

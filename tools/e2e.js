@@ -10,9 +10,11 @@ const shotDir = process.argv[2];
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto('http://localhost:8123/index.html');
+    await page.goto('http://localhost:8123/index.html?fast');
+    await page.waitForSelector('#loader', { state: 'hidden' });
     await page.click('#settingsBtn');
     await page.click(`#modes [data-mode="${mode}"]`);
+    await page.waitForSelector('#loader', { state: 'hidden' });
     const sol = await page.evaluate(() => window.__wend.puzzle.solution);
     const center = async (i) => (await page.locator(`.tile[data-i="${i}"]`).boundingBox());
     // A wrong word still fills the slot of its length, but without a green check; the real word then replaces it.
@@ -47,9 +49,11 @@ const shotDir = process.argv[2];
   // Unsolved mid-game screenshot with a partial trace and a placed word
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
-  await page.goto('http://localhost:8123/index.html');
+  await page.goto('http://localhost:8123/index.html?fast');
+    await page.waitForSelector('#loader', { state: 'hidden' });
   await page.click('#settingsBtn');
   await page.click('#modes [data-mode="hard"]');
+  await page.waitForSelector('#loader', { state: 'hidden' });
   const sol = await page.evaluate(() => window.__wend.puzzle.solution);
   const drag = async (path) => {
     const c = async (i) => page.locator(`.tile[data-i="${i}"]`).boundingBox();

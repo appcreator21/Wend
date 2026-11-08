@@ -3,17 +3,23 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 const files = {};
-const add = (rel) => { files['/' + rel] = fs.readFileSync(path.join(root, rel), 'utf8'); };
-add('index.html');
-for (const d of ['src', 'data']) for (const f of fs.readdirSync(path.join(root, d))) add(d + '/' + f);
-const types = { html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', js: 'application/javascript; charset=utf-8' };
+const binary = {}; // path -> base64
+const add = (rel) => {
+  if (/\.png$/.test(rel)) binary['/' + rel] = fs.readFileSync(path.join(root, rel)).toString('base64');
+  else files['/' + rel] = fs.readFileSync(path.join(root, rel), 'utf8');
+};
+add('index.html'); add('manifest.webmanifest');
+for (const d of ['src', 'data', 'icons']) for (const f of fs.readdirSync(path.join(root, d))) add(d + '/' + f);
+const types = { html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', js: 'application/javascript; charset=utf-8', png: 'image/png', webmanifest: 'application/manifest+json' };
 const src = `const FILES = ${JSON.stringify(files)};
+const BIN = ${JSON.stringify(binary)};
 const TYPES = ${JSON.stringify(types)};
 export default {
   fetch(request) {
     let p = new URL(request.url).pathname;
     if (p === '/') p = '/index.html';
-    const body = FILES[p];
+    let body = FILES[p];
+    if (body === undefined && BIN[p] !== undefined) body = Uint8Array.from(atob(BIN[p]), (c) => c.charCodeAt(0));
     if (body === undefined) return new Response('Not found', { status: 404 });
     return new Response(body, { headers: {
       'content-type': TYPES[p.split('.').pop()] || 'text/plain',
@@ -25,4 +31,4 @@ export default {
 `;
 fs.mkdirSync(path.join(root, 'worker'), { recursive: true });
 fs.writeFileSync(path.join(root, 'worker/_worker.js'), src);
-console.log('worker/_worker.js', Math.round(src.length / 1024) + 'KB,', Object.keys(files).length, 'files');
+console.log('worker/_worker.js', Math.round(src.length / 1024) + 'KB,', Object.keys(files).length + Object.keys(binary).length, 'files');

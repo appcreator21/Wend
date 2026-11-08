@@ -2,14 +2,79 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Wend</title>
 <meta name="description" content="A daily word-path puzzle. Trace words through the grid so every tile is used exactly once.">
 <meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f23" media="(prefers-color-scheme: dark)">
+<!-- Installed web app (Add to Home Screen): full screen, content drawn under a see-through status bar -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Wend">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="src/style.css">
+<script>
+  // Installed-app mode always uses the dark look (the status bar text is light there).
+  if (window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)) {
+    document.documentElement.classList.add('standalone', 'dark');
+  }
+</script>
 </head>
 <body>
-<main class="app">
+
+<!-- Loading screen: four words wend around a 4x4 board, one colour at a time, until every tile is used. -->
+<div id="loader" class="loader" role="status" aria-live="polite">
+  <div class="loader-inner">
+    <div class="loader-title">Wend</div>
+    <svg class="loader-board" viewBox="0 0 400 400" aria-hidden="true">
+      <rect x="3" y="3" width="394" height="394" rx="26" class="lb-frame"/>
+      <g class="lb lb0">
+        <rect x="0" y="0" width="200" height="200" class="lb-tint t0"/>
+        <polyline pathLength="1" points="50,50 150,50 150,150 50,150" class="lb-snake s0"/>
+        <text x="50" y="52">W</text>
+        <text x="150" y="52">E</text>
+        <text x="150" y="152">N</text>
+        <text x="50" y="152">D</text>
+      </g>
+      <g class="lb lb1">
+        <rect x="200" y="0" width="200" height="200" class="lb-tint t1"/>
+        <polyline pathLength="1" points="250,50 350,50 350,150 250,150" class="lb-snake s1"/>
+        <text x="250" y="52">W</text>
+        <text x="350" y="52">O</text>
+        <text x="350" y="152">R</text>
+        <text x="250" y="152">D</text>
+      </g>
+      <g class="lb lb2">
+        <rect x="0" y="200" width="200" height="200" class="lb-tint t2"/>
+        <polyline pathLength="1" points="50,250 150,250 150,350 50,350" class="lb-snake s2"/>
+        <text x="50" y="252">P</text>
+        <text x="150" y="252">A</text>
+        <text x="150" y="352">T</text>
+        <text x="50" y="352">H</text>
+      </g>
+      <g class="lb lb3">
+        <rect x="200" y="200" width="200" height="200" class="lb-tint t3"/>
+        <polyline pathLength="1" points="250,250 350,250 350,350 250,350" class="lb-snake s3"/>
+        <text x="250" y="252">F</text>
+        <text x="350" y="252">I</text>
+        <text x="350" y="352">N</text>
+        <text x="250" y="352">D</text>
+      </g>
+    </svg>
+    <div class="loader-tag" aria-hidden="true">
+      <span>Wending your words&hellip;</span>
+      <span>Hiding the decoys&hellip;</span>
+      <span>Bending the paths&hellip;</span>
+      <span>Using every tile once&hellip;</span>
+    </div>
+  </div>
+</div>
+
+<main class="app" id="app">
   <header class="top">
     <div class="left">
       <button id="backBtn" class="icon-btn" aria-label="Choose puzzle">
@@ -31,12 +96,22 @@
     </div>
   </header>
 
+  <div class="progress" aria-live="polite">
+    <div id="progBar" class="prog-bar" aria-hidden="true"></div>
+    <span id="progText" class="prog-text"></span>
+  </div>
+
   <section class="frame" id="frame">
     <svg id="board" class="board" role="group" aria-label="Letter grid"></svg>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </section>
 
-  <p id="current" class="current" aria-live="polite">&nbsp;</p>
+  <div class="current-row">
+    <p id="current" class="current" aria-live="polite">Drag across tiles to spell a word</p>
+    <button id="clearChip" class="clear-chip" aria-label="Clear current word" hidden>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
 
   <section id="slots" class="slots" aria-label="Words to find"></section>
 
@@ -48,17 +123,19 @@
   <details class="how">
     <summary>How to play</summary>
     <ul>
-      <li>Drag (or tap) neighbouring tiles &mdash; up, down, left or right, never diagonally &mdash; to trace a word.</li>
-      <li>The tiles under the grid show how many words to find and how long each is.</li>
-      <li>Every open tile must be used <b>exactly once</b>. No overlaps, no leftovers.</li>
-      <li>When you let go, a real word of a free length locks in. Tap a placed word to take it back.</li>
-      <li>Tap mode: tap tiles to build a path, then tap the last tile again (or press Enter) to submit.</li>
+      <li>Drag across neighbouring tiles &mdash; up, down, left or right, never diagonally &mdash; and let go to place the word.</li>
+      <li>It fills the slot with that many letters. Only the <b>correct</b> word gets a green check and locks in.</li>
+      <li>Every open tile is used <b>exactly once</b>. No overlaps, no leftovers.</li>
+      <li>Wrong word? Tap it (on the board or in its slot) to remove it, or just trace a new one over it.</li>
+      <li>Prefer tapping? Tap tiles one by one, then tap the last tile again to place it.</li>
     </ul>
   </details>
 
   <button id="resultsBtn" class="results" disabled>See results</button>
   <p class="foot">Fan-made practice game inspired by LinkedIn's Wend. Not affiliated with LinkedIn.</p>
 </main>
+
+<canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
 
 <dialog id="settingsDlg">
   <h2>Puzzle</h2>
@@ -68,6 +145,10 @@
     <button data-mode="medium">Medium</button>
     <button data-mode="hard">Hard</button>
   </nav>
+  <div class="toggles">
+    <label class="toggle"><input type="checkbox" id="soundToggle" checked><span>Sound</span></label>
+    <label class="toggle"><input type="checkbox" id="hapticToggle" checked><span>Vibration</span></label>
+  </div>
   <div class="dlg-actions">
     <button id="newBtn" hidden>New puzzle</button>
     <form method="dialog"><button>Close</button></form>
