@@ -21,6 +21,9 @@ for (const d of Object.keys(G.DIFFICULTIES)) {
     if (p.solution.some((x) => x.word.endsWith('S'))) fails++; // no giveaway plurals
     const cands = G.traceableWords(p.letters, p.rows, p.cols, answers, p.lengths.at(-1));
     if (G.countSolutions(cands, p.letters, p.lengths, 2) !== 1) fails++; // unique solution
+    const key = (q) => q.slice().sort((a, b) => a - b).join(',');
+    const sol = new Map(p.solution.map((x) => [x.word.toLowerCase(), key(x.path)]));
+    if (cands.some((c) => sol.has(c.word) && sol.get(c.word) !== key(c.path))) fails++; // no alternate route for an answer
     if (!p.solution.every(({ word }) => answers.includes(word.toLowerCase()))) fails++;
   }
 }

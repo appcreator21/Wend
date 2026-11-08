@@ -251,6 +251,11 @@
       const cands = traceableWords(letters, diff.rows, diff.cols, opts.answers, diff.lengths[diff.lengths.length - 1]);
       const decoys = cands.filter((c) => !used.has(c.word) && diff.lengths.includes(c.word.length)).length;
       if (decoys < diff.minDecoys) continue;
+      // Every answer must be traceable only along its own tiles. Otherwise a player could trace the right
+      // word through the wrong tiles, get a green check, and be left with a board that can't be finished.
+      const tilesKey = (pth) => pth.slice().sort((a, b) => a - b).join(',');
+      const answerTiles = new Map(solution.map((x) => [x.word.toLowerCase(), tilesKey(x.path)]));
+      if (cands.some((c) => answerTiles.has(c.word) && answerTiles.get(c.word) !== tilesKey(c.path))) continue;
       if (countSolutions(cands, letters, diff.lengths, 2) !== 1) continue;
       return { rows: diff.rows, cols: diff.cols, blocked: [...blocked], letters, lengths: diff.lengths.slice(), solution };
     }

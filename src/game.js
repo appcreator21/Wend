@@ -27,6 +27,29 @@
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
+  // ---------- puzzle source ----------
+  // Puzzles are pregenerated and verified at build time (tools/build-puzzles.js) so they load instantly.
+  // Daily = the pool entry for today's date; practice = a random entry. Falls back to the live generator.
+  function fromPool(difficulty) {
+    const list = window.WEND_POOL && window.WEND_POOL[difficulty];
+    if (!list || !list.length) return null;
+    let idx;
+    if (mode === 'daily') {
+      const d = new Date();
+      idx = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000) % list.length;
+    } else {
+      idx = Math.floor(Math.random() * list.length);
+    }
+    const e = list[idx];
+    const letters = e.l.split('').map((ch) => (ch === '#' ? null : ch));
+    return {
+      rows: e.r, cols: e.c, letters,
+      blocked: letters.map((ch, i) => (ch ? -1 : i)).filter((i) => i >= 0),
+      lengths: e.s.map((x) => x[0].length).sort((a, b) => a - b),
+      solution: e.s.map(([word, path]) => ({ word, path })),
+    };
+  }
+
   // ---------- setup ----------
   function start(m) {
     mode = m || mode;
@@ -39,7 +62,7 @@
       difficulty = mode;
       seed = 'wend-practice-' + mode + '-' + Date.now() + '-' + practiceN++;
     }
-    puzzle = generate({ seed, difficulty, answers: window.WEND_ANSWERS });
+    puzzle = fromPool(difficulty) || generate({ seed, difficulty, answers: window.WEND_ANSWERS });
     puzzle.difficulty = difficulty;
     placed = [];
     path = [];
@@ -201,7 +224,10 @@
       if (evict) slotWords.forEach((x) => { if (x.placed === p) x.placed = null; });
       return !evict;
     });
-    const entry = { word, path: path.slice(), color: slot.color, correct: word === slot.answer };
+    // Correct means the right word on the right tiles (the generator guarantees no other route spells it).
+    const tiles = (p) => p.slice().sort((a, b) => a - b).join(',');
+    const answerPath = puzzle.solution.find((x) => x.word === slot.answer).path;
+    const entry = { word, path: path.slice(), color: slot.color, correct: word === slot.answer && tiles(path) === tiles(answerPath) };
     slot.placed = entry;
     placed.push(entry);
     path = []; hintCell = -1;
