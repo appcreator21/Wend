@@ -5,9 +5,9 @@
   // Word lengths always climb by one, starting at 4: 4 words on 5x5, 5 on 6x6, 6 on 7x7.
   // Cells not covered by a word are blocked, so tiles = sum of the lengths.
   const DIFFICULTIES = {
-    easy:   { rows: 5, cols: 5, lengths: [4, 5, 6, 7] },
-    medium: { rows: 6, cols: 6, lengths: [4, 5, 6, 7, 8] },
-    hard:   { rows: 7, cols: 7, lengths: [4, 5, 6, 7, 8, 9] },
+    easy:   { rows: 5, cols: 5, lengths: [4, 5, 6, 7], minDecoys: 12 },
+    medium: { rows: 6, cols: 6, lengths: [4, 5, 6, 7, 8], minDecoys: 20 },
+    hard:   { rows: 7, cols: 7, lengths: [4, 5, 6, 7, 8, 9], minDecoys: 30 },
   };
 
   function mulberry32(seed) {
@@ -83,7 +83,9 @@
       (function walk() {
         if (out.length >= limit) return;
         if (path.length === len) { out.push(path.slice()); return; }
-        const opts = shuffle(neighbours(path[path.length - 1], rows, cols).filter((j) => !covered[j]), rnd);
+        const L = path.length;
+        const straight = (j) => L >= 3 && j - path[L - 1] === path[L - 1] - path[L - 2] && path[L - 1] - path[L - 2] === path[L - 2] - path[L - 3];
+        const opts = shuffle(neighbours(path[L - 1], rows, cols).filter((j) => !covered[j] && !straight(j)), rnd);
         for (const j of opts) {
           covered[j] = true; path.push(j);
           walk();
@@ -153,6 +155,69 @@
     return t;
   }
 
+  // ---- difficulty analysis -------------------------------------------------
+  // A trie of the common words lets us list every word a player could trace in a finished
+  // board, and count how many ways the board splits into one word per slot.
+  const trieCache = new WeakMap();
+  function trieFor(words) {
+    let t = trieCache.get(words);
+    if (t) return t;
+    t = {};
+    for (const w of words) {
+      let n = t;
+      for (const ch of w) n = n[ch] || (n[ch] = {});
+      n.$ = w;
+    }
+    trieCache.set(words, t);
+    return t;
+  }
+
+  // Every traceable common word (4+ letters, up to maxLen) in the board.
+  function traceableWords(letters, rows, cols, words, maxLen) {
+    const trie = trieFor(words), out = [], used = new Array(letters.length).fill(false), path = [];
+    function walk(i, node) {
+      const nx = node[letters[i].toLowerCase()];
+      if (!nx) return;
+      used[i] = true; path.push(i);
+      if (nx.$ && path.length >= 4) out.push({ word: nx.$, path: path.slice() });
+      if (path.length < maxLen) for (const j of neighbours(i, rows, cols)) if (letters[j] && !used[j]) walk(j, nx);
+      used[i] = false; path.pop();
+    }
+    for (let i = 0; i < letters.length; i++) if (letters[i]) walk(i, trie);
+    return out;
+  }
+
+  // Number of ways (capped at `limit`) to cover every open tile with one traceable word per slot length.
+  function countSolutions(cands, letters, lengths, limit) {
+    const byCell = letters.map(() => []);
+    cands.forEach((c, k) => c.path.forEach((cell) => byCell[cell].push(k)));
+    const covered = letters.map((l) => !l), lenUsed = new Set(), wordUsed = new Set();
+    let count = 0;
+    (function rec() {
+      if (count >= limit) return;
+      const first = covered.indexOf(false);
+      if (first < 0) { count++; return; }
+      for (const k of byCell[first]) {
+        const c = cands[k];
+        if (lenUsed.has(c.word.length) || wordUsed.has(c.word) || !lengths.includes(c.word.length)) continue;
+        if (c.path.some((cell) => covered[cell])) continue;
+        c.path.forEach((cell) => (covered[cell] = true)); lenUsed.add(c.word.length); wordUsed.add(c.word);
+        rec();
+        c.path.forEach((cell) => (covered[cell] = false)); lenUsed.delete(c.word.length); wordUsed.delete(c.word);
+      }
+    })();
+    return count;
+  }
+
+  function longestRun(path, cols) {
+    let best = 2, run = 2;
+    for (let i = 2; i < path.length; i++) {
+      if (path[i] - path[i - 1] === path[i - 1] - path[i - 2]) run++; else run = 2;
+      best = Math.max(best, run);
+    }
+    return best;
+  }
+
   /**
    * generate({ seed, difficulty, answers }) ->
    *   { rows, cols, blocked:[idx], letters:[char|null], lengths:[...], solution:[{word,path}] }
@@ -161,18 +226,15 @@
     const diff = DIFFICULTIES[opts.difficulty || 'easy'];
     const rnd = mulberry32(hashString(String(opts.seed)));
     const byLen = {};
-    for (const w of opts.answers) (byLen[w.length] = byLen[w.length] || []).push(w);
+    for (const w of opts.answers) if (!w.endsWith('s')) (byLen[w.length] = byLen[w.length] || []).push(w);
     const total = diff.lengths.reduce((a, b) => a + b, 0);
     const n = diff.rows * diff.cols;
 
-    for (let attempt = 0; attempt < 2000; attempt++) {
+    for (let attempt = 0; attempt < 20000; attempt++) {
       const blocked = pickBlocked(diff.rows, diff.cols, n - total, rnd);
       if (blocked.size !== n - total) continue;
       const paths = partition(diff.rows, diff.cols, blocked, diff.lengths, rnd);
       if (!paths) continue;
-      // Skip boards with straight-line words: too easy to read off.
-      if (!paths.every((p) => turns(p, diff.cols) >= (p.length >= 6 ? 2 : 1))) continue;
-
       const used = new Set();
       const letters = new Array(n).fill(null);
       const solution = [];
@@ -184,12 +246,18 @@
         p.forEach((cell, k) => (letters[cell] = w[k].toUpperCase()));
         solution.push({ word: w.toUpperCase(), path: p });
       }
+      // Make it a real puzzle: exactly one way to split the board into common words,
+      // and plenty of decoy words that look right but lead nowhere.
+      const cands = traceableWords(letters, diff.rows, diff.cols, opts.answers, diff.lengths[diff.lengths.length - 1]);
+      const decoys = cands.filter((c) => !used.has(c.word) && diff.lengths.includes(c.word.length)).length;
+      if (decoys < diff.minDecoys) continue;
+      if (countSolutions(cands, letters, diff.lengths, 2) !== 1) continue;
       return { rows: diff.rows, cols: diff.cols, blocked: [...blocked], letters, lengths: diff.lengths.slice(), solution };
     }
     throw new Error('could not generate puzzle');
   }
 
-  const api = { generate, neighbours, DIFFICULTIES, hashString };
+  const api = { generate, neighbours, DIFFICULTIES, hashString, traceableWords, countSolutions, longestRun };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.WendGen = api;
 })(typeof window !== 'undefined' ? window : globalThis);
