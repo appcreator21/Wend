@@ -4,6 +4,8 @@
   const $ = (id) => document.getElementById(id);
   const DAILY_BY_WEEKDAY = ['hard', 'easy', 'easy', 'medium', 'medium', 'hard', 'medium']; // Sun..Sat
   const COLORS = 6;
+  // Each slot (word length) keeps its own colour, in the same order as the original: pink, indigo, green, purple, cyan, orange.
+  const SLOT_COLORS = [4, 5, 3, 2, 0, 1];
 
   const els = {
     board: $('board'), frame: $('frame'), slots: $('slots'), current: $('current'), toast: $('toast'), timer: $('timer'),
@@ -43,7 +45,7 @@
     path = [];
     dragging = false; moved = false; solved = false; hints = 0; hintCell = -1;
     startedAt = 0; elapsed = 0;
-    slotWords = puzzle.lengths.map((len) => ({ len, placed: null }));
+    slotWords = puzzle.lengths.map((len, k) => ({ len, color: SLOT_COLORS[k % COLORS], answer: puzzle.solution.find((x) => x.word.length === len).word, placed: null }));
     els.newBtn.hidden = mode === 'daily';
     [...els.modes.children].forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
     buildBoard();
@@ -65,7 +67,8 @@
     return m;
   };
 
-  const nextColor = () => { const u = new Set(placed.map((p) => p.color)); let c = 0; while (u.has(c)) c++; return c % COLORS; };
+  // While tracing, the path takes the colour of the slot a word this long would fill.
+  const traceColor = () => { const s = slotWords.find((x) => x.len === path.length); return s ? 'var(--c' + s.color + ')' : 'var(--muted)'; };
   const pts = (p) => p.map((i) => cx(i) + ',' + cy(i)).join(' ');
 
   // Direction chevrons sitting on the boundary between consecutive tiles.
@@ -82,8 +85,8 @@
   }
 
   function snake(p, color, cls) {
-    if (p.length === 1) return '<circle class="pill-dot ' + cls + '" cx="' + cx(p[0]) + '" cy="' + cy(p[0]) + '" r="32" fill="var(--c' + color + ')"/>';
-    return '<polyline class="pill-path ' + cls + '" points="' + pts(p) + '" stroke="var(--c' + color + ')"/>';
+    if (p.length === 1) return '<circle class="pill-dot ' + cls + '" cx="' + cx(p[0]) + '" cy="' + cy(p[0]) + '" r="32" fill="' + color + '"/>';
+    return '<polyline class="pill-path ' + cls + '" points="' + pts(p) + '" stroke="' + color + '"/>';
   }
 
   const CHECK = (x, y, color) => '<circle class="badge-bg" cx="' + x + '" cy="' + y + '" r="15" stroke="var(--c' + color + ')"/>' +
@@ -102,24 +105,24 @@
       const diff = (rr, cc) => rr >= 0 && rr < puzzle.rows && cc >= 0 && cc < puzzle.cols && key(rr * puzzle.cols + cc) !== my;
       const l = diff(r, c - 1) ? inset : 0, rt = diff(r, c + 1) ? inset : 0, t = diff(r - 1, c) ? inset : 0, bm = diff(r + 1, c) ? inset : 0;
       const k = owner.get(i);
-      const fill = !ch ? 'var(--blocked)' : k !== undefined ? 'var(--t' + placed[k].color % COLORS + ')' : 'var(--cell)';
+      const fill = !ch ? 'var(--blocked)' : k !== undefined ? 'var(--t' + placed[k].color + ')' : 'var(--cell)';
       svg += '<rect class="tile' + (ch ? '' : ' blocked') + '" data-i="' + i + '" x="' + (x + l) + '" y="' + (y + t) + '" width="' + (CELL - l - rt) + '" height="' + (CELL - t - bm) + '" fill="' + fill + '"/>';
     });
     if (hintCell >= 0) svg += '<rect class="hint-ring" x="' + (cx(hintCell) - 44) + '" y="' + (cy(hintCell) - 44) + '" width="88" height="88" rx="14"/>';
     // 2. word snakes, chevrons and badges
     placed.forEach((p) => {
-      svg += snake(p.path, p.color % COLORS, '');
-      svg += '<circle class="ring" cx="' + cx(p.path[0]) + '" cy="' + cy(p.path[0]) + '" r="33" stroke="color-mix(in srgb, var(--c' + (p.color % COLORS) + ') 65%, #000)"/>';
+      svg += snake(p.path, 'var(--c' + p.color + ')', '');
+      svg += '<circle class="ring" cx="' + cx(p.path[0]) + '" cy="' + cy(p.path[0]) + '" r="33" stroke="color-mix(in srgb, var(--c' + p.color + ') 65%, #000)"/>';
     });
     placed.forEach((p) => { svg += chevrons(p.path); });
     if (path.length) {
-      svg += '<g id="trace" class="trace">' + snake(path, nextColor(), '') + chevrons(path) + '</g>';
+      svg += '<g id="trace" class="trace">' + snake(path, traceColor(), '') + chevrons(path) + '</g>';
     }
-    placed.forEach((p) => {
+    placed.filter((p) => p.correct).forEach((p) => {
       // Badge sits on the side of the first tile opposite to where the word heads.
       const dx = Math.sign(cx(p.path[1]) - cx(p.path[0])), dy = Math.sign(cy(p.path[1]) - cy(p.path[0]));
       const bx = dx ? -dx * 30 : 30, by = dx ? -30 : -dy * 30;
-      svg += CHECK(cx(p.path[0]) + bx, cy(p.path[0]) + by, p.color % COLORS);
+      svg += CHECK(cx(p.path[0]) + bx, cy(p.path[0]) + by, p.color);
     });
     // 3. letters on top
     puzzle.letters.forEach((ch, i) => {
@@ -140,17 +143,17 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'slot' + (s.placed ? ' filled' : '');
-      b.setAttribute('aria-label', s.placed ? s.placed.word + ', tap to remove' : s.len + ' letter word, empty');
+      b.setAttribute('aria-label', s.placed ? s.placed.word + (s.placed.correct ? ', correct' : ', not correct, tap to remove') : s.len + ' letter word, empty');
       for (let k = 0; k < s.len; k++) {
         const c = document.createElement('span');
         c.className = 'cell';
-        if (s.placed) { c.textContent = s.placed.word[k]; c.style.background = 'var(--c' + (s.placed.color % COLORS) + ')'; }
+        if (s.placed) { c.textContent = s.placed.word[k]; c.style.background = 'var(--c' + s.color + ')'; }
         b.appendChild(c);
       }
-      if (s.placed) {
+      if (s.placed && s.placed.correct) {
         b.insertAdjacentHTML('beforeend', '<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>');
       }
-      b.addEventListener('click', () => { if (s.placed && !solved) removeWord(s.placed); });
+      b.addEventListener('click', () => { if (s.placed && !s.placed.correct && !solved) removeWord(s.placed); });
       els.slots.appendChild(b);
     });
   }
@@ -169,7 +172,8 @@
   }
 
   // ---------- game logic ----------
-  function usedSet() { const s = new Set(); placed.forEach((p) => p.path.forEach((c) => s.add(c))); return s; }
+  // Tiles of correct words are locked; tiles of wrong words can be traced over (that replaces the wrong word).
+  function lockedSet() { const s = new Set(); placed.forEach((p) => { if (p.correct) p.path.forEach((c) => s.add(c)); }); return s; }
 
   function tick() {
     elapsed = Math.floor((Date.now() - startedAt) / 1000);
@@ -182,21 +186,26 @@
   function submit() {
     if (solved || !path.length) return;
     const word = path.map((i) => puzzle.letters[i]).join('');
-    const reason = (() => {
-      if (word.length < 3) return 'Words need at least 3 letters';
-      const slot = slotWords.find((s) => !s.placed && s.len === word.length);
-      if (!slot) return slotWords.some((s) => s.len === word.length) ? 'Already placed a ' + word.length + '-letter word' : 'No ' + word.length + '-letter word needed';
-      if (!window.WEND_DICT.has(word.toLowerCase())) return 'Not in word list';
-      return null;
-    })();
-    if (reason) { toast(reason); shake(); if (word.length >= 3) setTimeout(() => { path = []; render(); }, 280); return; }
-    const slot = slotWords.find((s) => !s.placed && s.len === word.length);
-    const used = new Set(placed.map((p) => p.color));
-    let color = 0; while (used.has(color)) color++;
-    const entry = { word, path: path.slice(), color };
+    const clearSoon = () => setTimeout(() => { path = []; render(); }, 280);
+    // The word goes into the slot with that many letters: an empty one first, else one holding a wrong word.
+    const slots = slotWords.filter((x) => x.len === word.length);
+    const slot = slots.find((x) => !x.placed) || slots.find((x) => !x.placed.correct);
+    if (!slot) {
+      toast(slots.length ? 'You already found the ' + word.length + '-letter word' : 'No ' + word.length + '-letter word in this puzzle');
+      shake(); clearSoon(); return;
+    }
+    // Replace the slot's previous (wrong) word and any wrong words this path runs over.
+    const mine = new Set(path);
+    placed = placed.filter((p) => {
+      const evict = p === slot.placed || p.path.some((c) => mine.has(c));
+      if (evict) slotWords.forEach((x) => { if (x.placed === p) x.placed = null; });
+      return !evict;
+    });
+    const entry = { word, path: path.slice(), color: slot.color, correct: word === slot.answer };
     slot.placed = entry;
     placed.push(entry);
     path = []; hintCell = -1;
+    if (entry.correct) toast('Correct!');
     checkWin();
     render();
   }
@@ -209,8 +218,7 @@
   }
 
   function checkWin() {
-    const open = puzzle.letters.filter(Boolean).length;
-    if (usedSet().size !== open) return;
+    if (!slotWords.every((x) => x.placed && x.placed.correct)) return;
     solved = true;
     clearInterval(timerId); tick();
     let streakLine = '';
@@ -241,7 +249,7 @@
         const i = r * puzzle.cols + c;
         if (!puzzle.letters[i]) { line += '⬛'; continue; }
         const p = placed.find((q) => q.path.includes(i));
-        line += ['🟦', '🟪', '🟩', '🟧', '🟨', '🟫'][p.color % 6];
+        line += ['🟦', '🟧', '🟪', '🟩', '🟥', '🟦'][p.color % 6];
       }
       grid.push(line);
     }
@@ -251,10 +259,8 @@
 
   function hint() {
     if (solved) return;
-    const used = usedSet();
-    const openLens = slotWords.filter((s) => !s.placed).map((s) => s.len);
-    const cand = puzzle.solution.find((s) => s.path.every((c) => !used.has(c)) && openLens.includes(s.path.length));
-    if (!cand) { toast('Remove a word to get a hint'); return; }
+    const cand = puzzle.solution.find((x) => !slotWords.some((sl) => sl.placed && sl.placed.correct && sl.answer === x.word));
+    if (!cand) return;
     ensureTimer();
     hints++;
     hintCell = cand.path[0];
@@ -275,7 +281,7 @@
   function onDown(e) {
     if (solved) return;
     const i = tileAt(e.clientX, e.clientY);
-    if (i < 0 || usedSet().has(i)) return;
+    if (i < 0 || lockedSet().has(i)) return;
     ensureTimer();
     e.preventDefault();
     hintCell = -1;
@@ -292,7 +298,7 @@
   function onMove(e) {
     if (!dragging) return;
     const i = tileAt(e.clientX, e.clientY);
-    if (i < 0 || usedSet().has(i)) return;
+    if (i < 0 || lockedSet().has(i)) return;
     const last = path[path.length - 1];
     if (i === last) return;
     if (path.length > 1 && i === path[path.length - 2]) { path.pop(); moved = true; render(); return; }

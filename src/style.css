@@ -70,7 +70,7 @@ h1 { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
 @media (prefers-reduced-motion: reduce) { .board .shake { animation: none; } }
 
 .toast {
-  position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 2; padding: 6px 14px;
+  position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%); z-index: 2; padding: 6px 14px;
   background: var(--text); color: var(--bg); border-radius: 999px; font-size: 14px; font-weight: 600;
   opacity: 0; pointer-events: none; transition: opacity .15s; white-space: nowrap;
 }

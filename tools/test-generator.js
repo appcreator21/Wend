@@ -21,7 +21,7 @@ for (const d of Object.keys(G.DIFFICULTIES)) {
     if (p.solution.some((x) => x.word.endsWith('S'))) fails++; // no giveaway plurals
     const cands = G.traceableWords(p.letters, p.rows, p.cols, answers, p.lengths.at(-1));
     if (G.countSolutions(cands, p.letters, p.lengths, 2) !== 1) fails++; // unique solution
-    if (!p.solution.every(({ word }) => window.WEND_DICT.has(word.toLowerCase()))) fails++;
+    if (!p.solution.every(({ word }) => answers.includes(word.toLowerCase()))) fails++;
   }
 }
 console.log(fails ? 'FAIL ' + fails : 'ok', (Date.now() - t0) + 'ms for 900 puzzles');

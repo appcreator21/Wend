@@ -15,9 +15,11 @@ No build step. Serve the folder and open `index.html`:
 - **Easy / Medium / Hard** – endless practice puzzles. Word lengths always climb by one starting at 4:
   Easy = 4 words (4-7 letters, 5x5 grid), Medium = 5 words (4-8, 6x6), Hard = 6 words (4-9, 7x7). Unused cells are blocked.
 - Drag to trace, or tap tiles and tap the last one again (or press Enter) to submit. Tap a placed word or press Undo to remove it. Puzzle choice lives behind the gear icon.
+- Each board has one fixed set of answer words. Whatever you trace fills the slot with that many letters
+  (a wrong word replaces the previous wrong one); only the correct word gets a green check, locks in and counts.
+  The puzzle is solved when every slot is correct.
 - Every board is checked to have exactly one way to split into common words, with plenty of decoy words (Easy 12+, Medium 20+, Hard 30+),
   no straight runs longer than 3 tiles and no plural answers, so you can't just read words off the grid.
-- Any real word from the dictionary is accepted, not just the generator's words.
 
 ## Layout
 

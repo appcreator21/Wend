@@ -15,7 +15,17 @@ const shotDir = process.argv[2];
     await page.click(`#modes [data-mode="${mode}"]`);
     const sol = await page.evaluate(() => window.__wend.puzzle.solution);
     const center = async (i) => (await page.locator(`.tile[data-i="${i}"]`).boundingBox());
-    // wrong word first: a path through a non-word should be rejected, not break state
+    // A wrong word still fills the slot of its length, but without a green check; the real word then replaces it.
+    {
+      const wrong = sol[0].path.slice().reverse();
+      const b0 = await center(wrong[0]);
+      await page.mouse.move(b0.x + b0.width / 2, b0.y + b0.height / 2);
+      await page.mouse.down();
+      for (const i of wrong.slice(1)) { const b = await center(i); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 3 }); }
+      await page.mouse.up();
+      const filled = await page.locator('.slot.filled').count(), checks = await page.locator('.slot .check').count();
+      if (filled !== 1 || checks !== 0) { console.log(mode, 'WRONG-WORD CHECK FAILED', filled, checks); bad++; }
+    }
     for (const { path } of sol) {
       const b0 = await center(path[0]);
       await page.mouse.move(b0.x + b0.width / 2, b0.y + b0.height / 2);
