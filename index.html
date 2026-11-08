@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wend</title>
+<meta name="description" content="A daily word-path puzzle. Trace words through the grid so every tile is used exactly once.">
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div>
+      <h1>Wend</h1>
+      <p class="sub">Use every tile exactly once.</p>
+    </div>
+    <div class="top-right">
+      <span id="timer" class="timer" aria-label="Elapsed time">0:00</span>
+      <button id="helpBtn" class="icon-btn" aria-label="How to play">?</button>
+    </div>
+  </header>
+
+  <nav class="modes" id="modes" aria-label="Puzzle mode">
+    <button data-mode="daily" class="active">Daily</button>
+    <button data-mode="easy">Easy</button>
+    <button data-mode="medium">Medium</button>
+    <button data-mode="hard">Hard</button>
+  </nav>
+
+  <section class="board-wrap">
+    <div id="board" class="board" role="grid" aria-label="Letter grid"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="current" aria-live="polite">
+    <span id="current" class="current-word">&nbsp;</span>
+  </section>
+
+  <section id="slots" class="slots" aria-label="Words to find"></section>
+
+  <section class="actions">
+    <button id="submitBtn" class="primary">Enter</button>
+    <button id="clearBtn">Clear</button>
+    <button id="hintBtn">Hint</button>
+    <button id="newBtn" hidden>New puzzle</button>
+  </section>
+
+  <p class="foot">Fan-made practice game inspired by LinkedIn's Wend. Not affiliated with LinkedIn.</p>
+</main>
+
+<dialog id="helpDlg">
+  <h2>How to play</h2>
+  <ul>
+    <li>Drag (or tap) neighbouring tiles — up, down, left or right, never diagonally — to trace a word.</li>
+    <li>The slots under the grid show how many words to find and how long each is.</li>
+    <li>Every open tile must be used <b>exactly once</b>. No overlaps, no leftovers.</li>
+    <li>When you let go, a real word of a free length locks in. Tap a placed word to take it back.</li>
+    <li>Tapping: tap tiles to build a path, then tap the last tile again (or press Enter) to submit.</li>
+  </ul>
+  <form method="dialog"><button class="primary">Got it</button></form>
+</dialog>
+
+<dialog id="winDlg">
+  <h2>Solved!</h2>
+  <p id="winStats"></p>
+  <pre id="shareText" class="share"></pre>
+  <div class="dlg-actions">
+    <button id="shareBtn" class="primary">Copy result</button>
+    <form method="dialog"><button>Close</button></form>
+  </div>
+</dialog>
+
+<script src="data/words.js"></script>
+<script src="src/generator.js"></script>
+<script src="src/game.js"></script>
+</body>
+</html>

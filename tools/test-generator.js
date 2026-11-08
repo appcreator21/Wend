@@ -1,0 +1,26 @@
+const G = require('../src/generator.js');
+global.window = {};
+require('../data/words.js');
+const answers = window.WEND_ANSWERS;
+let fails = 0, t0 = Date.now();
+for (const d of Object.keys(G.DIFFICULTIES)) {
+  for (let s = 0; s < 300; s++) {
+    const p = G.generate({ seed: d + s, difficulty: d, answers });
+    const cells = new Set(), blocked = new Set(p.blocked);
+    for (const { word, path } of p.solution) {
+      if (word.length !== path.length) { fails++; console.log("len"); }
+      path.forEach((c, k) => {
+        if (cells.has(c) || blocked.has(c) || p.letters[c] !== word[k]) { fails++; if (fails<4) console.log("cell", cells.has(c), blocked.has(c), p.letters[c], word[k], d, s); }
+        cells.add(c);
+        if (k && !G.neighbours(path[k - 1], p.rows, p.cols).includes(c)) fails++;
+      });
+    }
+    if (cells.size + blocked.size !== p.rows * p.cols) fails++;
+    if (!p.solution.every(({ word }) => window.WEND_DICT.has(word.toLowerCase()))) fails++;
+  }
+}
+console.log(fails ? 'FAIL ' + fails : 'ok', (Date.now() - t0) + 'ms for 900 puzzles');
+const p = G.generate({ seed: 'demo', difficulty: 'hard', answers });
+for (let r = 0; r < p.rows; r++) console.log(Array.from({ length: p.cols }, (_, c) => p.letters[r * p.cols + c] || '#').join(' '));
+console.log(p.solution.map((s) => s.word).join(' '));
+process.exit(fails ? 1 : 0);
