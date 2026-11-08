@@ -28,3 +28,10 @@ No build step. Serve the folder and open `index.html`:
 - `data/words.js` – pool of puzzle answers, built by `tools/build-words.js`
 - `tools/test-generator.js` – generator validity test (`node tools/test-generator.js`)
 - `tools/e2e.js` – Playwright test that solves each mode through the real UI
+
+## Deploy (Cloudflare Pages)
+
+No framework: the site is static. `tools/build-site.sh` copies `index.html`, `src/` and `data/` into `dist/`.
+
+- **Git integration:** Workers & Pages -> Create -> Pages -> connect this repo. Build command `sh tools/build-site.sh`, output directory `dist`.
+- **CLI:** `sh tools/build-site.sh && npx wrangler pages deploy dist --project-name wend` (needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`).
