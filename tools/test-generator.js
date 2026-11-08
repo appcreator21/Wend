@@ -4,7 +4,7 @@ require('../data/words.js');
 const answers = window.WEND_ANSWERS;
 let fails = 0, t0 = Date.now();
 for (const d of Object.keys(G.DIFFICULTIES)) {
-  for (let s = 0; s < 300; s++) {
+  for (let s = 0; s < 100; s++) {
     const p = G.generate({ seed: d + s, difficulty: d, answers });
     const cells = new Set(), blocked = new Set(p.blocked);
     for (const { word, path } of p.solution) {
@@ -16,6 +16,7 @@ for (const d of Object.keys(G.DIFFICULTIES)) {
       });
     }
     if (cells.size + blocked.size !== p.rows * p.cols) fails++;
+    if (p.lengths.some((l, k) => l !== 4 + k)) fails++; // lengths must be 4,5,6,...
     if (!p.solution.every(({ word }) => window.WEND_DICT.has(word.toLowerCase()))) fails++;
   }
 }

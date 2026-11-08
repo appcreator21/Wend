@@ -4,14 +4,14 @@
 // all-words.txt : big dictionary (used to accept any valid guess)
 const fs = require('fs');
 const [commonPath, allPath] = process.argv.slice(2);
-const ok = (w) => /^[a-z]{3,6}$/.test(w);
+const ok = (w) => /^[a-z]{4,9}$/.test(w);
 const all = new Set(fs.readFileSync(allPath, 'utf8').split(/\s+/).filter(ok));
 const seen = new Set();
 const common = [];
 for (const w of fs.readFileSync(commonPath, 'utf8').split(/\s+/)) {
   if (ok(w) && all.has(w) && !seen.has(w)) { seen.add(w); common.push(w); }
 }
-const answers = common.slice(0, 5000);
+const answers = common; // every common word of 4-9 letters
 const out =
   'window.WEND_ANSWERS = ' + JSON.stringify(answers.join(' ')) + '.split(" ");\n' +
   'window.WEND_DICT = new Set(' + JSON.stringify([...all].join(' ')) + '.split(" "));\n';

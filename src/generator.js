@@ -2,10 +2,12 @@
 (function (root) {
   'use strict';
 
+  // Word lengths always climb by one, starting at 4: 4 words on 5x5, 5 on 6x6, 6 on 7x7.
+  // Cells not covered by a word are blocked, so tiles = sum of the lengths.
   const DIFFICULTIES = {
-    easy:   { rows: 4, cols: 4, blocked: 0, sets: [[3, 4, 4, 5], [4, 4, 4, 4], [3, 3, 5, 5], [3, 3, 4, 6], [3, 4, 4, 5]] },
-    medium: { rows: 4, cols: 5, blocked: 0, sets: [[4, 4, 6, 6], [3, 5, 6, 6], [4, 4, 4, 4, 4], [3, 4, 5, 4, 4], [3, 3, 4, 5, 5]] },
-    hard:   { rows: 5, cols: 5, blocked: 3, sets: [[3, 4, 5, 5, 5], [4, 4, 4, 5, 5], [3, 3, 5, 5, 6], [3, 4, 4, 5, 6]] },
+    easy:   { rows: 5, cols: 5, lengths: [4, 5, 6, 7] },
+    medium: { rows: 6, cols: 6, lengths: [4, 5, 6, 7, 8] },
+    hard:   { rows: 7, cols: 7, lengths: [4, 5, 6, 7, 8, 9] },
   };
 
   function mulberry32(seed) {
@@ -93,9 +95,28 @@
       return out;
     }
 
+    // Every connected block of uncovered cells must be fillable by some subset of the remaining words.
+    function feasible(remaining) {
+      let sums = new Set([0]);
+      for (const l of remaining) sums = new Set([...sums, ...[...sums].map((x) => x + l)]);
+      const seen = new Array(n).fill(false);
+      for (let i = 0; i < n; i++) {
+        if (covered[i] || seen[i]) continue;
+        let size = 0;
+        const stack = [i]; seen[i] = true;
+        while (stack.length) {
+          const x = stack.pop(); size++;
+          for (const y of neighbours(x, rows, cols)) if (!covered[y] && !seen[y]) { seen[y] = true; stack.push(y); }
+        }
+        if (!sums.has(size)) return false;
+      }
+      return true;
+    }
+
     function solve(remaining) {
       if (--budget < 0) return null;
       if (!remaining.length) return [];
+      if (!feasible(remaining)) return null;
       // Most constrained uncovered cell first.
       let best = -1, bestDeg = 9, ties = 0;
       for (let i = 0; i < n; i++) {
@@ -141,20 +162,19 @@
     const rnd = mulberry32(hashString(String(opts.seed)));
     const byLen = {};
     for (const w of opts.answers) (byLen[w.length] = byLen[w.length] || []).push(w);
+    const total = diff.lengths.reduce((a, b) => a + b, 0);
+    const n = diff.rows * diff.cols;
 
-    for (let attempt = 0; attempt < 500; attempt++) {
-      const lengths = diff.sets[Math.floor(rnd() * diff.sets.length)];
-      const blocked = diff.blocked ? pickBlocked(diff.rows, diff.cols, diff.blocked, rnd) : new Set();
-      const open = diff.rows * diff.cols - blocked.size;
-      if (lengths.reduce((a, b) => a + b, 0) !== open) continue;
-      const paths = partition(diff.rows, diff.cols, blocked, lengths, rnd);
+    for (let attempt = 0; attempt < 2000; attempt++) {
+      const blocked = pickBlocked(diff.rows, diff.cols, n - total, rnd);
+      if (blocked.size !== n - total) continue;
+      const paths = partition(diff.rows, diff.cols, blocked, diff.lengths, rnd);
       if (!paths) continue;
-      // Skip boards that are mostly straight lines: too easy to read off.
-      const bendy = paths.filter((p) => p.length < 4 || turns(p, diff.cols) >= 1).length;
-      if (bendy < paths.length) continue;
+      // Skip boards with straight-line words: too easy to read off.
+      if (!paths.every((p) => turns(p, diff.cols) >= (p.length >= 6 ? 2 : 1))) continue;
 
       const used = new Set();
-      const letters = new Array(diff.rows * diff.cols).fill(null);
+      const letters = new Array(n).fill(null);
       const solution = [];
       for (const p of paths) {
         const pool = byLen[p.length];
@@ -164,10 +184,7 @@
         p.forEach((cell, k) => (letters[cell] = w[k].toUpperCase()));
         solution.push({ word: w.toUpperCase(), path: p });
       }
-      return {
-        rows: diff.rows, cols: diff.cols, blocked: [...blocked],
-        letters, lengths: lengths.slice().sort((a, b) => a - b), solution,
-      };
+      return { rows: diff.rows, cols: diff.cols, blocked: [...blocked], letters, lengths: diff.lengths.slice(), solution };
     }
     throw new Error('could not generate puzzle');
   }

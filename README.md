@@ -11,8 +11,9 @@ No build step. Serve the folder and open `index.html`:
 
     python3 -m http.server 8000
 
-- **Daily** – same puzzle for everyone each day (seeded by date; difficulty rises on Fri/Sun).
-- **Easy / Medium / Hard** – endless practice puzzles (4x4, 4x5, 5x5 with blocked tiles).
+- **Daily** – same puzzle for everyone each day (seeded by date; hard on Fri/Sun).
+- **Easy / Medium / Hard** – endless practice puzzles. Word lengths always climb by one starting at 4:
+  Easy = 4 words (4-7 letters, 5x5 grid), Medium = 5 words (4-8, 6x6), Hard = 6 words (4-9, 7x7). Unused cells are blocked.
 - Drag to trace, or tap tiles and tap the last one again (or press Enter) to submit. Tap a placed word or press Undo to remove it. Puzzle choice lives behind the gear icon.
 - Any real word from the dictionary is accepted, not just the generator's words.
 
