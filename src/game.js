@@ -7,7 +7,7 @@
 
   const els = {
     board: $('board'), frame: $('frame'), slots: $('slots'), current: $('current'), toast: $('toast'), timer: $('timer'),
-    modes: $('modes'), undo: $('undoBtn'), hint: $('hintBtn'), newBtn: $('newBtn'), results: $('resultsBtn'),
+    modes: $('modes'), undo: $('undoBtn'), undoIcon: $('undoIcon'), hint: $('hintBtn'), newBtn: $('newBtn'), results: $('resultsBtn'),
     win: $('winDlg'), winStats: $('winStats'), share: $('shareText'), shareBtn: $('shareBtn'), settings: $('settingsDlg'),
   };
 
@@ -92,21 +92,35 @@
   function render() {
     const owner = cellOwner();
     let svg = '';
-    // 1. cell backgrounds (these are the hit targets, kept as .tile for tests)
+    // 1. cell backgrounds. Neighbouring cells of the same word merge; different regions are
+    //    separated by a thin gap that shows the light frame, like the original.
+    const key = (i) => (i < 0 ? null : !puzzle.letters[i] ? 'b' : owner.has(i) ? 'w' + owner.get(i) : 'u');
+    const inset = 2;
     puzzle.letters.forEach((ch, i) => {
-      const x = (i % puzzle.cols) * CELL, y = Math.floor(i / puzzle.cols) * CELL;
-      if (!ch) { svg += '<rect class="tile blocked" data-i="' + i + '" x="' + (x + 3) + '" y="' + (y + 3) + '" width="94" height="94" rx="8" fill="var(--blocked)"/>'; return; }
+      const r = Math.floor(i / puzzle.cols), c = i % puzzle.cols, x = c * CELL, y = r * CELL;
+      const my = key(i);
+      const diff = (rr, cc) => rr >= 0 && rr < puzzle.rows && cc >= 0 && cc < puzzle.cols && key(rr * puzzle.cols + cc) !== my;
+      const l = diff(r, c - 1) ? inset : 0, rt = diff(r, c + 1) ? inset : 0, t = diff(r - 1, c) ? inset : 0, bm = diff(r + 1, c) ? inset : 0;
       const k = owner.get(i);
-      svg += '<rect class="tile" data-i="' + i + '" x="' + x + '" y="' + y + '" width="100" height="100" fill="' + (k !== undefined ? 'var(--t' + placed[k].color % COLORS + ')' : 'var(--cell)') + '"/>';
+      const fill = !ch ? 'var(--blocked)' : k !== undefined ? 'var(--t' + placed[k].color % COLORS + ')' : 'var(--cell)';
+      svg += '<rect class="tile' + (ch ? '' : ' blocked') + '" data-i="' + i + '" x="' + (x + l) + '" y="' + (y + t) + '" width="' + (CELL - l - rt) + '" height="' + (CELL - t - bm) + '" fill="' + fill + '"/>';
     });
     if (hintCell >= 0) svg += '<rect class="hint-ring" x="' + (cx(hintCell) - 44) + '" y="' + (cy(hintCell) - 44) + '" width="88" height="88" rx="14"/>';
     // 2. word snakes, chevrons and badges
-    placed.forEach((p) => { svg += snake(p.path, p.color % COLORS, ''); });
+    placed.forEach((p) => {
+      svg += snake(p.path, p.color % COLORS, '');
+      svg += '<circle class="ring" cx="' + cx(p.path[0]) + '" cy="' + cy(p.path[0]) + '" r="33" stroke="color-mix(in srgb, var(--c' + (p.color % COLORS) + ') 65%, #000)"/>';
+    });
     placed.forEach((p) => { svg += chevrons(p.path); });
     if (path.length) {
       svg += '<g id="trace" class="trace">' + snake(path, nextColor(), '') + chevrons(path) + '</g>';
     }
-    placed.forEach((p) => { svg += CHECK(cx(p.path[0]) + 30, cy(p.path[0]) + 30, p.color % COLORS); });
+    placed.forEach((p) => {
+      // Badge sits on the side of the first tile opposite to where the word heads.
+      const dx = Math.sign(cx(p.path[1]) - cx(p.path[0])), dy = Math.sign(cy(p.path[1]) - cy(p.path[0]));
+      const bx = dx ? -dx * 30 : 30, by = dx ? -30 : -dy * 30;
+      svg += CHECK(cx(p.path[0]) + bx, cy(p.path[0]) + by, p.color % COLORS);
+    });
     // 3. letters on top
     puzzle.letters.forEach((ch, i) => {
       if (!ch) return;
@@ -118,6 +132,7 @@
     els.current.textContent = path.map((i) => puzzle.letters[i]).join('') || ' ';
     els.results.disabled = !solved;
     els.undo.disabled = solved;
+    els.undoIcon.disabled = solved || (!path.length && !placed.length);
     els.hint.disabled = solved;
 
     els.slots.innerHTML = '';
@@ -297,11 +312,14 @@
   els.frame.addEventListener('pointermove', onMove);
   els.frame.addEventListener('pointerup', onUp);
   els.frame.addEventListener('pointercancel', () => { dragging = false; });
-  els.undo.addEventListener('click', () => {
+  const undo = () => {
     if (solved) return;
     if (path.length) { path = []; hintCell = -1; render(); }
     else if (placed.length) removeWord(placed[placed.length - 1]);
-  });
+  };
+  els.undo.addEventListener('click', undo);
+  els.undoIcon.addEventListener('click', undo);
+  $('backBtn').addEventListener('click', () => els.settings.showModal());
   els.hint.addEventListener('click', hint);
   els.results.addEventListener('click', () => els.win.showModal && els.win.showModal());
   els.newBtn.addEventListener('click', () => { els.settings.close(); start(); });
