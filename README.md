@@ -25,6 +25,6 @@ No build step. Serve the folder and open `index.html`:
 
 - `src/generator.js` – seeded puzzle generator (random path partition of the grid + common words)
 - `src/game.js`, `src/style.css`, `index.html` – the game UI
-- `data/words.js` – answer list + dictionary, built by `tools/build-words.js`
+- `data/words.js` – pool of puzzle answers, built by `tools/build-words.js`
 - `tools/test-generator.js` – generator validity test (`node tools/test-generator.js`)
 - `tools/e2e.js` – Playwright test that solves each mode through the real UI
