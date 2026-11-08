@@ -5,59 +5,63 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Wend</title>
 <meta name="description" content="A daily word-path puzzle. Trace words through the grid so every tile is used exactly once.">
+<meta name="color-scheme" content="dark light">
 <link rel="stylesheet" href="src/style.css">
 </head>
 <body>
 <main class="app">
   <header class="top">
-    <div>
-      <h1>Wend</h1>
-      <p class="sub">Use every tile exactly once.</p>
+    <div class="timer-wrap" aria-label="Elapsed time">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span id="timer" class="timer">0:00</span>
     </div>
-    <div class="top-right">
-      <span id="timer" class="timer" aria-label="Elapsed time">0:00</span>
-      <button id="helpBtn" class="icon-btn" aria-label="How to play">?</button>
-    </div>
+    <h1>Wend</h1>
+    <button id="settingsBtn" class="icon-btn" aria-label="Settings and puzzle choice">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
   </header>
 
+  <section class="frame" id="frame">
+    <svg id="board" class="board" role="group" aria-label="Letter grid"></svg>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </section>
+
+  <p id="current" class="current" aria-live="polite">&nbsp;</p>
+
+  <section id="slots" class="slots" aria-label="Words to find"></section>
+
+  <section class="actions">
+    <button id="undoBtn" class="pill">Undo</button>
+    <button id="hintBtn" class="pill">Hint</button>
+  </section>
+
+  <details class="how">
+    <summary>How to play</summary>
+    <ul>
+      <li>Drag (or tap) neighbouring tiles &mdash; up, down, left or right, never diagonally &mdash; to trace a word.</li>
+      <li>The tiles under the grid show how many words to find and how long each is.</li>
+      <li>Every open tile must be used <b>exactly once</b>. No overlaps, no leftovers.</li>
+      <li>When you let go, a real word of a free length locks in. Tap a placed word to take it back.</li>
+      <li>Tap mode: tap tiles to build a path, then tap the last tile again (or press Enter) to submit.</li>
+    </ul>
+  </details>
+
+  <button id="resultsBtn" class="results" disabled>See results</button>
+  <p class="foot">Fan-made practice game inspired by LinkedIn's Wend. Not affiliated with LinkedIn.</p>
+</main>
+
+<dialog id="settingsDlg">
+  <h2>Puzzle</h2>
   <nav class="modes" id="modes" aria-label="Puzzle mode">
     <button data-mode="daily" class="active">Daily</button>
     <button data-mode="easy">Easy</button>
     <button data-mode="medium">Medium</button>
     <button data-mode="hard">Hard</button>
   </nav>
-
-  <section class="board-wrap">
-    <div id="board" class="board" role="grid" aria-label="Letter grid"></div>
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  </section>
-
-  <section class="current" aria-live="polite">
-    <span id="current" class="current-word">&nbsp;</span>
-  </section>
-
-  <section id="slots" class="slots" aria-label="Words to find"></section>
-
-  <section class="actions">
-    <button id="submitBtn" class="primary">Enter</button>
-    <button id="clearBtn">Clear</button>
-    <button id="hintBtn">Hint</button>
+  <div class="dlg-actions">
     <button id="newBtn" hidden>New puzzle</button>
-  </section>
-
-  <p class="foot">Fan-made practice game inspired by LinkedIn's Wend. Not affiliated with LinkedIn.</p>
-</main>
-
-<dialog id="helpDlg">
-  <h2>How to play</h2>
-  <ul>
-    <li>Drag (or tap) neighbouring tiles — up, down, left or right, never diagonally — to trace a word.</li>
-    <li>The slots under the grid show how many words to find and how long each is.</li>
-    <li>Every open tile must be used <b>exactly once</b>. No overlaps, no leftovers.</li>
-    <li>When you let go, a real word of a free length locks in. Tap a placed word to take it back.</li>
-    <li>Tapping: tap tiles to build a path, then tap the last tile again (or press Enter) to submit.</li>
-  </ul>
-  <form method="dialog"><button class="primary">Got it</button></form>
+    <form method="dialog"><button>Close</button></form>
+  </div>
 </dialog>
 
 <dialog id="winDlg">

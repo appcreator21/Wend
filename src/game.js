@@ -6,9 +6,9 @@
   const COLORS = 6;
 
   const els = {
-    board: $('board'), slots: $('slots'), current: $('current'), toast: $('toast'), timer: $('timer'),
-    modes: $('modes'), submit: $('submitBtn'), clear: $('clearBtn'), hint: $('hintBtn'), newBtn: $('newBtn'),
-    win: $('winDlg'), winStats: $('winStats'), share: $('shareText'), shareBtn: $('shareBtn'), help: $('helpDlg'),
+    board: $('board'), frame: $('frame'), slots: $('slots'), current: $('current'), toast: $('toast'), timer: $('timer'),
+    modes: $('modes'), undo: $('undoBtn'), hint: $('hintBtn'), newBtn: $('newBtn'), results: $('resultsBtn'),
+    win: $('winDlg'), winStats: $('winStats'), share: $('shareText'), shareBtn: $('shareBtn'), settings: $('settingsDlg'),
   };
 
   let mode = 'daily';
@@ -51,43 +51,77 @@
     els.timer.textContent = '0:00';
   }
 
+  const CELL = 100;
+  const cx = (i) => (i % puzzle.cols) * CELL + CELL / 2;
+  const cy = (i) => Math.floor(i / puzzle.cols) * CELL + CELL / 2;
+
   function buildBoard() {
-    els.board.style.gridTemplateColumns = 'repeat(' + puzzle.cols + ', 1fr)';
-    els.board.innerHTML = '';
-    puzzle.letters.forEach((ch, i) => {
-      const t = document.createElement('div');
-      t.className = 'tile' + (ch ? '' : ' blocked');
-      t.dataset.i = i;
-      if (ch) {
-        t.textContent = ch;
-        t.setAttribute('role', 'gridcell');
-        t.setAttribute('aria-label', ch + ', row ' + (Math.floor(i / puzzle.cols) + 1) + ' column ' + ((i % puzzle.cols) + 1));
-      } else t.setAttribute('aria-hidden', 'true');
-      els.board.appendChild(t);
-    });
+    els.board.setAttribute('viewBox', '0 0 ' + puzzle.cols * CELL + ' ' + puzzle.rows * CELL);
   }
 
-  // ---------- rendering ----------
   const cellOwner = () => {
     const m = new Map();
     placed.forEach((p, k) => p.path.forEach((c) => m.set(c, k)));
     return m;
   };
 
+  const nextColor = () => { const u = new Set(placed.map((p) => p.color)); let c = 0; while (u.has(c)) c++; return c % COLORS; };
+  const pts = (p) => p.map((i) => cx(i) + ',' + cy(i)).join(' ');
+
+  // Direction chevrons sitting on the boundary between consecutive tiles.
+  function chevrons(p) {
+    let out = '';
+    for (let k = 1; k < p.length; k++) {
+      const mx = (cx(p[k - 1]) + cx(p[k])) / 2, my = (cy(p[k - 1]) + cy(p[k])) / 2;
+      const dx = Math.sign(cx(p[k]) - cx(p[k - 1])), dy = Math.sign(cy(p[k]) - cy(p[k - 1]));
+      const px = -dy, py = dx; // perpendicular
+      const tip = [mx + dx * 7, my + dy * 7], a = [mx - dx * 5 + px * 11, my - dy * 5 + py * 11], b = [mx - dx * 5 - px * 11, my - dy * 5 - py * 11];
+      out += '<polyline class="chev" points="' + a + ' ' + tip + ' ' + b + '"/>';
+    }
+    return out;
+  }
+
+  function snake(p, color, cls) {
+    if (p.length === 1) return '<circle class="pill-dot ' + cls + '" cx="' + cx(p[0]) + '" cy="' + cy(p[0]) + '" r="32" fill="var(--c' + color + ')"/>';
+    return '<polyline class="pill-path ' + cls + '" points="' + pts(p) + '" stroke="var(--c' + color + ')"/>';
+  }
+
+  const CHECK = (x, y, color) => '<circle class="badge-bg" cx="' + x + '" cy="' + y + '" r="15" stroke="var(--c' + color + ')"/>' +
+    '<path class="badge-check" d="M' + (x - 7) + ' ' + y + ' l5 5 l9 -10"/>';
+
   function render() {
     const owner = cellOwner();
-    [...els.board.children].forEach((t, i) => {
-      if (!puzzle.letters[i]) return;
+    let svg = '';
+    // 1. cell backgrounds (these are the hit targets, kept as .tile for tests)
+    puzzle.letters.forEach((ch, i) => {
+      const x = (i % puzzle.cols) * CELL, y = Math.floor(i / puzzle.cols) * CELL;
+      if (!ch) { svg += '<rect class="tile blocked" data-i="' + i + '" x="' + (x + 3) + '" y="' + (y + 3) + '" width="94" height="94" rx="8" fill="var(--blocked)"/>'; return; }
       const k = owner.get(i);
-      t.classList.toggle('used', k !== undefined);
-      t.style.background = k !== undefined ? 'var(--w' + (placed[k].color % COLORS) + ')' : '';
-      t.classList.toggle('trace', path.includes(i));
-      t.classList.toggle('hint', i === hintCell);
+      svg += '<rect class="tile" data-i="' + i + '" x="' + x + '" y="' + y + '" width="100" height="100" fill="' + (k !== undefined ? 'var(--t' + placed[k].color % COLORS + ')' : 'var(--cell)') + '"/>';
     });
+    if (hintCell >= 0) svg += '<rect class="hint-ring" x="' + (cx(hintCell) - 44) + '" y="' + (cy(hintCell) - 44) + '" width="88" height="88" rx="14"/>';
+    // 2. word snakes, chevrons and badges
+    placed.forEach((p) => { svg += snake(p.path, p.color % COLORS, ''); });
+    placed.forEach((p) => { svg += chevrons(p.path); });
+    if (path.length) {
+      svg += '<g id="trace" class="trace">' + snake(path, nextColor(), '') + chevrons(path) + '</g>';
+    }
+    placed.forEach((p) => { svg += CHECK(cx(p.path[0]) + 30, cy(p.path[0]) + 30, p.color % COLORS); });
+    // 3. letters on top
+    puzzle.letters.forEach((ch, i) => {
+      if (!ch) return;
+      const on = owner.has(i) || path.includes(i);
+      svg += '<text class="letter' + (on ? ' on' : '') + '" x="' + cx(i) + '" y="' + (cy(i) + 2) + '">' + ch + '</text>';
+    });
+    els.board.innerHTML = svg;
+
     els.current.textContent = path.map((i) => puzzle.letters[i]).join('') || ' ';
+    els.results.disabled = !solved;
+    els.undo.disabled = solved;
+    els.hint.disabled = solved;
 
     els.slots.innerHTML = '';
-    slotWords.forEach((s, idx) => {
+    slotWords.forEach((s) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'slot' + (s.placed ? ' filled' : '');
@@ -95,13 +129,12 @@
       for (let k = 0; k < s.len; k++) {
         const c = document.createElement('span');
         c.className = 'cell';
-        if (s.placed) { c.textContent = s.placed.word[k]; c.style.background = 'var(--w' + (s.placed.color % COLORS) + ')'; }
+        if (s.placed) { c.textContent = s.placed.word[k]; c.style.background = 'var(--c' + (s.placed.color % COLORS) + ')'; }
         b.appendChild(c);
       }
-      const l = document.createElement('span');
-      l.className = 'len';
-      l.textContent = s.len;
-      b.appendChild(l);
+      if (s.placed) {
+        b.insertAdjacentHTML('beforeend', '<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>');
+      }
       b.addEventListener('click', () => { if (s.placed && !solved) removeWord(s.placed); });
       els.slots.appendChild(b);
     });
@@ -116,10 +149,8 @@
   }
 
   function shake() {
-    path.forEach((i) => {
-      const t = els.board.children[i];
-      t.classList.remove('shake'); void t.offsetWidth; t.classList.add('shake');
-    });
+    const g = document.getElementById('trace');
+    if (g) { g.classList.remove('shake'); void g.getBoundingClientRect(); g.classList.add('shake'); }
   }
 
   // ---------- game logic ----------
@@ -143,7 +174,7 @@
       if (!window.WEND_DICT.has(word.toLowerCase())) return 'Not in word list';
       return null;
     })();
-    if (reason) { toast(reason); shake(); if (word.length >= 3) path = []; render(); return; }
+    if (reason) { toast(reason); shake(); if (word.length >= 3) setTimeout(() => { path = []; render(); }, 280); return; }
     const slot = slotWords.find((s) => !s.placed && s.len === word.length);
     const used = new Set(placed.map((p) => p.color));
     let color = 0; while (used.has(color)) color++;
@@ -219,10 +250,11 @@
 
   // ---------- input ----------
   function tileAt(x, y) {
-    const el = document.elementFromPoint(x, y);
-    const t = el && el.closest && el.closest('.tile');
-    if (!t || t.classList.contains('blocked')) return -1;
-    return +t.dataset.i;
+    const r = els.board.getBoundingClientRect();
+    const c = Math.floor(((x - r.left) / r.width) * puzzle.cols), row = Math.floor(((y - r.top) / r.height) * puzzle.rows);
+    if (c < 0 || c >= puzzle.cols || row < 0 || row >= puzzle.rows) return -1;
+    const i = row * puzzle.cols + c;
+    return puzzle.letters[i] ? i : -1;
   }
 
   function onDown(e) {
@@ -238,7 +270,7 @@
     else if (path.includes(i)) { path = path.slice(0, path.indexOf(i) + 1); }
     else if (path.length && neighbours(last, puzzle.rows, puzzle.cols).includes(i)) { path.push(i); }
     else { path = [i]; }
-    try { els.board.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    try { els.frame.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     render();
   }
 
@@ -261,16 +293,20 @@
     if (moved || wasSubmitTap) submit();
   }
 
-  els.board.addEventListener('pointerdown', onDown);
-  els.board.addEventListener('pointermove', onMove);
-  els.board.addEventListener('pointerup', onUp);
-  els.board.addEventListener('pointercancel', () => { dragging = false; });
-  els.submit.addEventListener('click', submit);
-  els.clear.addEventListener('click', () => { path = []; hintCell = -1; render(); });
+  els.frame.addEventListener('pointerdown', onDown);
+  els.frame.addEventListener('pointermove', onMove);
+  els.frame.addEventListener('pointerup', onUp);
+  els.frame.addEventListener('pointercancel', () => { dragging = false; });
+  els.undo.addEventListener('click', () => {
+    if (solved) return;
+    if (path.length) { path = []; hintCell = -1; render(); }
+    else if (placed.length) removeWord(placed[placed.length - 1]);
+  });
   els.hint.addEventListener('click', hint);
-  els.newBtn.addEventListener('click', () => start());
-  els.modes.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) start(b.dataset.mode); });
-  $('helpBtn').addEventListener('click', () => els.help.showModal());
+  els.results.addEventListener('click', () => els.win.showModal && els.win.showModal());
+  els.newBtn.addEventListener('click', () => { els.settings.close(); start(); });
+  els.modes.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { els.settings.close(); start(b.dataset.mode); } });
+  $('settingsBtn').addEventListener('click', () => els.settings.showModal());
   els.shareBtn.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(els.share.textContent); els.shareBtn.textContent = 'Copied!'; }
     catch (e) { els.shareBtn.textContent = 'Select & copy above'; }
@@ -282,7 +318,6 @@
     else if (e.key === 'Backspace') { path.pop(); render(); }
   });
 
-  if (!store.get('wend.seenHelp', false)) { store.set('wend.seenHelp', true); setTimeout(() => els.help.showModal && els.help.showModal(), 300); }
 
   // Test hook (used by tools/e2e.js)
   window.__wend = { get puzzle() { return puzzle; }, get solved() { return solved; } };

@@ -11,8 +11,8 @@ const shotDir = process.argv[2];
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('http://localhost:8123/index.html');
-    await page.click('#helpDlg button'); // dismiss first-run help
-    await page.click(`[data-mode="${mode}"]`);
+    await page.click('#settingsBtn');
+    await page.click(`#modes [data-mode="${mode}"]`);
     const sol = await page.evaluate(() => window.__wend.puzzle.solution);
     const center = async (i) => (await page.locator(`.tile[data-i="${i}"]`).boundingBox());
     // wrong word first: a path through a non-word should be rejected, not break state
@@ -38,8 +38,8 @@ const shotDir = process.argv[2];
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   await page.goto('http://localhost:8123/index.html');
-  await page.click('#helpDlg button');
-  await page.click('[data-mode="hard"]');
+  await page.click('#settingsBtn');
+  await page.click('#modes [data-mode="hard"]');
   const sol = await page.evaluate(() => window.__wend.puzzle.solution);
   const drag = async (path) => {
     const c = async (i) => page.locator(`.tile[data-i="${i}"]`).boundingBox();
