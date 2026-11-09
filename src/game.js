@@ -2,10 +2,12 @@
   'use strict';
   const { generate, neighbours } = window.WendGen;
   const $ = (id) => document.getElementById(id);
-  const DAILY_BY_WEEKDAY = ['hard', 'easy', 'easy', 'medium', 'medium', 'hard', 'medium']; // Sun..Sat
-  const COLORS = 6;
+  const DAILY_BY_WEEKDAY = ['expert', 'easy', 'easy', 'medium', 'medium', 'hard', 'hard']; // Sun..Sat
+  const MODES = ['daily', 'easy', 'medium', 'hard', 'expert'];
+  const NAMES = { daily: 'Daily', easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' };
+  const COLORS = 7;
   // Each slot (word length) keeps its own colour, in the same order as the original: pink, indigo, green, purple, cyan, orange.
-  const SLOT_COLORS = [4, 5, 3, 2, 0, 1];
+  const SLOT_COLORS = [4, 5, 3, 2, 0, 1, 6];
   const FAST = /[?&]fast\b/.test(location.search); // tests: skip the loading screen's minimum time
   const CELL = 100;
 
@@ -14,10 +16,10 @@
     modes: $('modes'), undo: $('undoBtn'), undoIcon: $('undoIcon'), hint: $('hintBtn'), newBtn: $('newBtn'), results: $('resultsBtn'),
     win: $('winDlg'), winStats: $('winStats'), share: $('shareText'), shareBtn: $('shareBtn'), settings: $('settingsDlg'),
     clearChip: $('clearChip'), progBar: $('progBar'), progText: $('progText'), loader: $('loader'), confetti: $('confetti'),
-    sound: $('soundToggle'), haptic: $('hapticToggle'),
+    sound: $('soundToggle'), haptic: $('hapticToggle'), nextBtn: $('nextBtn'),
   };
 
-  let mode = 'daily';
+  let mode = 'daily', startToken = 0;
   let puzzle, placed, slotWords, path, dragging, moved, tapWrong, lastPt, enterTile, startedAt, elapsed, timerId, solved, hints, hintCell, practiceN = 0;
 
   // ---------- persistence (all optional) ----------
@@ -95,36 +97,70 @@
     }, FAST ? 0 : afterMs);
   }
 
+  // ---------- unlimited puzzles ----------
+  // Fresh boards are generated on demand in a background worker (so the loading animation stays smooth),
+  // and the next one is prepared while you play, so "new puzzle" is usually instant.
+  const gen = { worker: undefined, pending: new Map(), next: {}, id: 0 };
+  function getWorker() {
+    if (gen.worker !== undefined) return gen.worker;
+    try {
+      gen.worker = new Worker('src/gen-worker.js');
+      gen.worker.onmessage = (e) => {
+        const r = gen.pending.get(e.data.id);
+        if (!r) return;
+        gen.pending.delete(e.data.id);
+        if (e.data.error) r.reject(new Error(e.data.error)); else r.resolve(e.data.puzzle);
+      };
+      gen.worker.onerror = () => { gen.worker = null; gen.pending.forEach((r) => r.reject(new Error('worker failed'))); gen.pending.clear(); };
+    } catch (err) { gen.worker = null; }
+    return gen.worker;
+  }
+  function requestPuzzle(difficulty) {
+    const seed = 'wend-' + difficulty + '-' + Date.now() + '-' + Math.random();
+    const inline = () => generate({ seed, difficulty, answers: window.WEND_ANSWERS });
+    const w = getWorker();
+    if (!w) return Promise.resolve().then(inline);
+    return new Promise((resolve, reject) => { const id = ++gen.id; gen.pending.set(id, { resolve, reject }); w.postMessage({ id, difficulty, seed }); })
+      .catch(inline);
+  }
+  const prefetch = (difficulty) => { if (!gen.next[difficulty]) gen.next[difficulty] = requestPuzzle(difficulty); };
+  function takePuzzle(difficulty) {
+    const p = gen.next[difficulty] || requestPuzzle(difficulty);
+    gen.next[difficulty] = null;
+    return p;
+  }
+
   // ---------- setup ----------
   function start(m, first) {
-    mode = m || mode;
+    mode = MODES.includes(m) ? m : mode;
+    store.set('wend.mode', mode);
+    if (mode !== 'daily') store.set('wend.practice', mode);
     clearInterval(timerId);
     if (!first) showLoader();
-    const t0 = Date.now();
-    let difficulty, seed;
-    if (mode === 'daily') {
-      difficulty = DAILY_BY_WEEKDAY[new Date().getDay()];
-      seed = 'wend-daily-' + todayKey();
-    } else {
-      difficulty = mode;
-      seed = 'wend-practice-' + mode + '-' + Date.now() + '-' + practiceN++;
-    }
-    // A fresh board can take a moment to generate (if the pool is missing); the loading screen covers it.
-    setTimeout(() => {
-      puzzle = fromPool(difficulty) || generate({ seed, difficulty, answers: window.WEND_ANSWERS });
+    const token = ++startToken, t0 = Date.now();
+    const difficulty = mode === 'daily' ? DAILY_BY_WEEKDAY[new Date().getDay()] : mode;
+    // Daily boards come from the shared pool so everyone gets the same one; practice boards are generated fresh.
+    const ready = mode === 'daily'
+      ? Promise.resolve().then(() => fromPool(difficulty) || generate({ seed: 'wend-daily-' + todayKey(), difficulty, answers: window.WEND_ANSWERS }))
+      : Promise.race([takePuzzle(difficulty), new Promise((res) => setTimeout(() => res(fromPool(difficulty)), 30000))]);
+    ready.then((p) => {
+      if (token !== startToken) return; // a newer start() superseded this one
+      puzzle = p;
       puzzle.difficulty = difficulty;
       placed = []; path = [];
       dragging = false; moved = false; tapWrong = null; solved = false; hints = 0; hintCell = -1; enterTile = -1; lastPt = null;
       startedAt = 0; elapsed = 0;
       slotWords = puzzle.lengths.map((len, k) => ({ len, color: SLOT_COLORS[k % COLORS], answer: puzzle.solution.find((x) => x.word.length === len).word, placed: null }));
       els.newBtn.hidden = mode === 'daily';
-      [...els.modes.children].forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+      [...els.modes.querySelectorAll('button')].forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
       els.board.classList.remove('win');
       els.board.setAttribute('viewBox', '0 0 ' + puzzle.cols * CELL + ' ' + puzzle.rows * CELL);
       els.timer.textContent = '0:00';
       render();
-      hideLoader(Math.max(0, (first ? 3000 : 1800) - (Date.now() - t0)));
-    }, 30);
+      hideLoader(Math.max(0, (first ? 2600 : 1300) - (Date.now() - t0)));
+      // Get the next puzzle ready in the background (the one you'll most likely play next).
+      prefetch(mode === 'daily' ? store.get('wend.practice', 'hard') : mode);
+    });
   }
 
   const cx = (i) => (i % puzzle.cols) * CELL + CELL / 2;
@@ -215,7 +251,7 @@
     // Progress: one segment per word
     els.progBar.innerHTML = slotWords.map((s) => '<i class="' + (s.placed && s.placed.correct ? 'on' : '') + '" style="' + (s.placed && s.placed.correct ? 'background:var(--c' + s.color + ')' : '') + '"></i>').join('');
     const found = slotWords.filter((s) => s.placed && s.placed.correct).length;
-    els.progText.textContent = found + ' of ' + slotWords.length + ' words';
+    els.progText.textContent = (mode === 'daily' ? 'Daily ' : '') + NAMES[puzzle.difficulty] + ' \u00b7 ' + found + '/' + slotWords.length;
 
     els.slots.innerHTML = '';
     slotWords.forEach((s) => {
@@ -328,9 +364,14 @@
       }
       streakLine = ' · Streak ' + st.streak + ' (best ' + st.best + ')';
     }
+    const today = store.get('wend.today', { date: '', count: 0 });
+    if (today.date !== todayKey()) { today.date = todayKey(); today.count = 0; }
+    today.count++; store.set('wend.today', today);
     const time = els.timer.textContent;
-    els.winStats.textContent = 'Solved in ' + time + (hints ? ' with ' + hints + ' hint' + (hints > 1 ? 's' : '') : '') + streakLine;
+    els.winStats.textContent = NAMES[puzzle.difficulty] + ' solved in ' + time + (hints ? ' with ' + hints + ' hint' + (hints > 1 ? 's' : '') : '') + streakLine +
+      ' \u00b7 ' + today.count + ' solved today';
     els.share.textContent = shareText(time);
+    els.nextBtn.textContent = mode === 'daily' ? 'Play ' + NAMES[store.get('wend.practice', 'hard')] + ' puzzles' : 'Next puzzle';
     setTimeout(() => { sfx.win(); buzz([20, 50, 20, 50, 60]); confetti(); }, 250);
     setTimeout(() => (els.win.showModal ? els.win.showModal() : alert(els.share.textContent)), 1500);
   }
@@ -343,11 +384,11 @@
         const i = r * puzzle.cols + c;
         if (!puzzle.letters[i]) { line += '⬛'; continue; }
         const p = placed.find((q) => q.path.includes(i));
-        line += ['🟦', '🟧', '🟪', '🟩', '🟥', '🟦'][p.color % 6];
+        line += ['🟦', '🟧', '🟪', '🟩', '🟥', '🟦', '🟨'][p.color % 7];
       }
       grid.push(line);
     }
-    const label = mode === 'daily' ? 'Wend ' + todayKey() : 'Wend (' + puzzle.difficulty + ')';
+    const label = mode === 'daily' ? 'Wend ' + todayKey() + ' (' + puzzle.difficulty + ')' : 'Wend (' + puzzle.difficulty + ')';
     return label + '\n' + time + (hints ? ' · ' + hints + ' hint' + (hints > 1 ? 's' : '') : '') + '\n' + grid.join('\n');
   }
 
@@ -481,6 +522,7 @@
   els.hint.addEventListener('click', hint);
   els.results.addEventListener('click', () => els.win.showModal && els.win.showModal());
   els.newBtn.addEventListener('click', () => { els.settings.close(); start(); });
+  els.nextBtn.addEventListener('click', () => { els.win.close(); start(mode === 'daily' ? store.get('wend.practice', 'hard') : mode); });
   els.modes.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { els.settings.close(); start(b.dataset.mode); } });
   $('settingsBtn').addEventListener('click', () => els.settings.showModal());
   els.shareBtn.addEventListener('click', async () => {
@@ -496,5 +538,5 @@
 
   // Test hook (used by tools/e2e.js)
   window.__wend = { get puzzle() { return puzzle; }, get solved() { return solved; } };
-  start('daily', true);
+  start(store.get('wend.mode', 'daily'), true);
 })();

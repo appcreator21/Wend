@@ -13,9 +13,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Wend">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<!-- Apple touch icons: iOS uses these for Add to Home Screen. Served at the site root too, where iOS looks by default. -->
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="src/style.css">
 <script>
   // Installed-app mode always uses the dark look (the status bar text is light there).
@@ -140,11 +145,13 @@
 <dialog id="settingsDlg">
   <h2>Puzzle</h2>
   <nav class="modes" id="modes" aria-label="Puzzle mode">
-    <button data-mode="daily" class="active">Daily</button>
-    <button data-mode="easy">Easy</button>
-    <button data-mode="medium">Medium</button>
-    <button data-mode="hard">Hard</button>
+    <button data-mode="daily" class="active"><b>Daily</b><small>Same for everyone</small></button>
+    <button data-mode="easy"><b>Easy</b><small>4 words &middot; 5&times;5</small></button>
+    <button data-mode="medium"><b>Medium</b><small>5 words &middot; 6&times;6</small></button>
+    <button data-mode="hard"><b>Hard</b><small>6 words &middot; 7&times;7</small></button>
+    <button data-mode="expert" class="wide"><b>Expert</b><small>7 words &middot; 8&times;8 &middot; words up to 10 letters</small></button>
   </nav>
+  <p class="modes-note">Practice puzzles are unlimited &mdash; a new one is made every time.</p>
   <div class="toggles">
     <label class="toggle"><input type="checkbox" id="soundToggle" checked><span>Sound</span></label>
     <label class="toggle"><input type="checkbox" id="hapticToggle" checked><span>Vibration</span></label>
@@ -159,9 +166,12 @@
   <h2>Solved!</h2>
   <p id="winStats"></p>
   <pre id="shareText" class="share"></pre>
-  <div class="dlg-actions">
-    <button id="shareBtn" class="primary">Copy result</button>
-    <form method="dialog"><button>Close</button></form>
+  <div class="dlg-stack">
+    <button id="nextBtn" class="primary">Next puzzle</button>
+    <div class="dlg-actions">
+      <button id="shareBtn">Copy result</button>
+      <form method="dialog"><button>Close</button></form>
+    </div>
   </div>
 </dialog>
 

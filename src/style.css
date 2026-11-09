@@ -17,7 +17,7 @@
   --accent-text: #fff;
   --results-bg: #1d2226;
   --results-text: #fff;
-  --c0: #00b4d8; --c1: #f58a00; --c2: #a259e6; --c3: #4fbf1a; --c4: #f43f6e; --c5: #6b6bf2;
+  --c0: #00b4d8; --c1: #f58a00; --c2: #a259e6; --c3: #4fbf1a; --c4: #f43f6e; --c5: #6b6bf2; --c6: #e6c200;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -37,7 +37,7 @@
 /* Region tint behind each word: its colour mixed into the page background. */
 :root, :root.dark { --t0: color-mix(in srgb, var(--c0) 30%, var(--bg)); --t1: color-mix(in srgb, var(--c1) 30%, var(--bg));
   --t2: color-mix(in srgb, var(--c2) 30%, var(--bg)); --t3: color-mix(in srgb, var(--c3) 30%, var(--bg));
-  --t4: color-mix(in srgb, var(--c4) 30%, var(--bg)); --t5: color-mix(in srgb, var(--c5) 30%, var(--bg)); }
+  --t4: color-mix(in srgb, var(--c4) 30%, var(--bg)); --t5: color-mix(in srgb, var(--c5) 30%, var(--bg)); --t6: color-mix(in srgb, var(--c6) 30%, var(--bg)); }
 
 * { box-sizing: border-box; }
 html { background: var(--bg); -webkit-text-size-adjust: 100%; overscroll-behavior: none; }
@@ -70,7 +70,7 @@ h1 { position: absolute; inset: 0; margin: 0; display: flex; align-items: center
 .prog-bar { flex: 1; display: flex; gap: 4px; }
 .prog-bar i { flex: 1; height: 6px; border-radius: 3px; background: var(--pill); transition: background .3s, transform .3s; }
 .prog-bar i.on { transform: scaleY(1.35); }
-.prog-text { font-size: 13px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 78px; text-align: right; }
+.prog-text { font-size: 13px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 
 .frame { position: relative; padding: 3px; background: var(--frame); border-radius: 12px; touch-action: none; cursor: pointer; }
 .board { display: block; width: 100%; height: auto; border-radius: 9px; overflow: hidden; user-select: none; -webkit-user-select: none; background: var(--frame); }
@@ -155,7 +155,11 @@ dialog[open] { animation: dlg .22s ease-out; }
 @keyframes dlg { from { transform: translateY(12px) scale(.97); opacity: 0; } }
 dialog::backdrop { background: rgba(0, 0, 0, .6); }
 dialog h2 { margin-top: 0; }
-.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.modes button { display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.2; }
+.modes button small { font-size: 11px; font-weight: 600; opacity: .75; }
+.modes button.wide { grid-column: 1 / -1; }
+.modes-note { margin: 0 0 14px; font-size: 12px; color: var(--muted); text-align: center; }
 .modes button, .dlg-actions button { min-height: 44px; padding: 8px 14px; border-radius: 999px; border: 0; background: var(--pill); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; width: 100%; }
 .modes button.active, button.primary { background: var(--accent); color: var(--accent-text); }
 .toggles { display: flex; gap: 18px; margin: 4px 0 16px; }
@@ -217,3 +221,6 @@ dialog h2 { margin-top: 0; }
   .loader-tag span { animation: none !important; } .loader-tag span:last-child { opacity: 1; }
   .board *, .slot *, .results, dialog[open], .clear-chip { animation: none !important; }
 }
+
+.dlg-stack { display: flex; flex-direction: column; gap: 8px; }
+.dlg-stack > .primary { min-height: 48px; border: 0; border-radius: 999px; font: inherit; font-weight: 700; cursor: pointer; }

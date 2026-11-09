@@ -12,22 +12,24 @@ No build step. Serve the folder and open `index.html`:
     python3 -m http.server 8000
 
 - **Daily** – same puzzle for everyone each day (seeded by date; hard on Fri/Sun).
-- **Easy / Medium / Hard** – endless practice puzzles. Word lengths always climb by one starting at 4:
-  Easy = 4 words (4-7 letters, 5x5 grid), Medium = 5 words (4-8, 6x6), Hard = 6 words (4-9, 7x7). Unused cells are blocked.
+- **Easy / Medium / Hard / Expert** – unlimited practice puzzles, a fresh one every time (generated in a background worker, with the next one prepared while you play).
+  Word lengths always climb by one starting at 4: Easy = 4 words (4-7 letters, 5x5), Medium = 5 (4-8, 6x6), Hard = 6 (4-9, 7x7), Expert = 7 (4-10, 8x8). Unused cells are blocked.
+- The app reopens in whichever mode you used last.
 - Add it to your home screen for a full-screen app (dark theme, content sits below the status bar).
 - Drag to trace, or tap tiles and tap the last one again (or press Enter) to submit. Tap a placed word or press Undo to remove it. Puzzle choice lives behind the gear icon.
 - Each board has one fixed set of answer words. Whatever you trace fills the slot with that many letters
   (a wrong word replaces the previous wrong one); only the correct word gets a green check, locks in and counts.
   The puzzle is solved when every slot is correct.
-- Every board is checked to have exactly one way to split into common words, with plenty of decoy words (Easy 12+, Medium 20+, Hard 30+),
+- Every board is checked to have exactly one way to split into common words, with plenty of decoy words (Easy 12+, Medium 20+, Hard 30+, Expert 40+),
   no straight runs longer than 3 tiles and no plural answers, so you can't just read words off the grid.
 
 ## Layout
 
 - `src/generator.js` – seeded puzzle generator (random path partition of the grid + common words)
 - `src/game.js`, `src/style.css`, `index.html` – the game UI (loading screen, drag input, sound/vibration, confetti)
-- `manifest.webmanifest`, `icons/` – installable web-app setup (Add to Home Screen)
-- `data/puzzles.js` – pregenerated, verified puzzles (365 easy, 365 medium, 200 hard); rebuild with `tools/build-puzzles.js` + `tools/pack-puzzles.js`, check with `node tools/test-pool.js`
+- `src/gen-worker.js` – background puzzle generator
+- `manifest.webmanifest`, `icons/` – installable web-app setup (Add to Home Screen); the Apple touch icon is also served at `/apple-touch-icon.png`
+- `data/puzzles.js` – pregenerated, verified puzzles for the shared daily (365 easy/medium/hard, 200 expert); rebuild with `tools/build-puzzles.js` + `tools/pack-puzzles.js`, check with `node tools/test-pool.js`
 - `data/words.js` – pool of puzzle answers, built by `tools/build-words.js`
 - `tools/test-generator.js` – generator validity test (`node tools/test-generator.js`)
 - `tools/e2e.js` – Playwright test that solves each mode through the real UI

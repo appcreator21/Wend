@@ -2,12 +2,13 @@
 (function (root) {
   'use strict';
 
-  // Word lengths always climb by one, starting at 4: 4 words on 5x5, 5 on 6x6, 6 on 7x7.
+  // Word lengths always climb by one, starting at 4: 4 words on 5x5, 5 on 6x6, 6 on 7x7, 7 on 8x8.
   // Cells not covered by a word are blocked, so tiles = sum of the lengths.
   const DIFFICULTIES = {
     easy:   { rows: 5, cols: 5, lengths: [4, 5, 6, 7], minDecoys: 12 },
     medium: { rows: 6, cols: 6, lengths: [4, 5, 6, 7, 8], minDecoys: 20 },
     hard:   { rows: 7, cols: 7, lengths: [4, 5, 6, 7, 8, 9], minDecoys: 30 },
+    expert: { rows: 8, cols: 8, lengths: [4, 5, 6, 7, 8, 9, 10], minDecoys: 40 },
   };
 
   function mulberry32(seed) {
@@ -235,29 +236,33 @@
       if (blocked.size !== n - total) continue;
       const paths = partition(diff.rows, diff.cols, blocked, diff.lengths, rnd);
       if (!paths) continue;
-      const used = new Set();
-      const letters = new Array(n).fill(null);
-      const solution = [];
-      for (const p of paths) {
-        const pool = byLen[p.length];
-        let w;
-        do { w = pool[Math.floor(rnd() * pool.length)]; } while (used.has(w));
-        used.add(w);
-        p.forEach((cell, k) => (letters[cell] = w[k].toUpperCase()));
-        solution.push({ word: w.toUpperCase(), path: p });
+      // Finding a layout is the slow part; trying words on it is cheap. So re-roll the words on this
+      // layout many times (most boards fail only for lack of decoys, which depends on the letters).
+      for (let reroll = 0; reroll < 60; reroll++) {
+        const used = new Set();
+        const letters = new Array(n).fill(null);
+        const solution = [];
+        for (const p of paths) {
+          const pool = byLen[p.length];
+          let w;
+          do { w = pool[Math.floor(rnd() * pool.length)]; } while (used.has(w));
+          used.add(w);
+          p.forEach((cell, k) => (letters[cell] = w[k].toUpperCase()));
+          solution.push({ word: w.toUpperCase(), path: p });
+        }
+        // Make it a real puzzle: exactly one way to split the board into common words,
+        // and plenty of decoy words that look right but lead nowhere.
+        const cands = traceableWords(letters, diff.rows, diff.cols, opts.answers, diff.lengths[diff.lengths.length - 1]);
+        const decoys = cands.filter((c) => !used.has(c.word) && diff.lengths.includes(c.word.length)).length;
+        if (decoys < diff.minDecoys) continue;
+        // Every answer must be traceable only along its own tiles. Otherwise a player could trace the right
+        // word through the wrong tiles, get a green check, and be left with a board that can't be finished.
+        const tilesKey = (pth) => pth.slice().sort((a, b) => a - b).join(',');
+        const answerTiles = new Map(solution.map((x) => [x.word.toLowerCase(), tilesKey(x.path)]));
+        if (cands.some((c) => answerTiles.has(c.word) && answerTiles.get(c.word) !== tilesKey(c.path))) continue;
+        if (countSolutions(cands, letters, diff.lengths, 2) !== 1) continue;
+        return { rows: diff.rows, cols: diff.cols, blocked: [...blocked], letters, lengths: diff.lengths.slice(), solution };
       }
-      // Make it a real puzzle: exactly one way to split the board into common words,
-      // and plenty of decoy words that look right but lead nowhere.
-      const cands = traceableWords(letters, diff.rows, diff.cols, opts.answers, diff.lengths[diff.lengths.length - 1]);
-      const decoys = cands.filter((c) => !used.has(c.word) && diff.lengths.includes(c.word.length)).length;
-      if (decoys < diff.minDecoys) continue;
-      // Every answer must be traceable only along its own tiles. Otherwise a player could trace the right
-      // word through the wrong tiles, get a green check, and be left with a board that can't be finished.
-      const tilesKey = (pth) => pth.slice().sort((a, b) => a - b).join(',');
-      const answerTiles = new Map(solution.map((x) => [x.word.toLowerCase(), tilesKey(x.path)]));
-      if (cands.some((c) => answerTiles.has(c.word) && answerTiles.get(c.word) !== tilesKey(c.path))) continue;
-      if (countSolutions(cands, letters, diff.lengths, 2) !== 1) continue;
-      return { rows: diff.rows, cols: diff.cols, blocked: [...blocked], letters, lengths: diff.lengths.slice(), solution };
     }
     throw new Error('could not generate puzzle');
   }

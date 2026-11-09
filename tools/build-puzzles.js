@@ -1,5 +1,5 @@
 // Pregenerates verified puzzles into data/puzzles-<difficulty>.json (compact form).
-//   node tools/build-puzzles.js <easy|medium|hard> <count>
+//   node tools/build-puzzles.js <easy|medium|hard|expert> <count>
 // tools/pack-puzzles.js then merges them into data/puzzles.js.
 const fs = require('fs'), path = require('path');
 global.window = {};

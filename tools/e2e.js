@@ -5,7 +5,7 @@ const shotDir = process.argv[2];
 (async () => {
   const browser = await chromium.launch();
   let bad = 0;
-  for (const mode of ['daily', 'easy', 'medium', 'hard']) {
+  for (const mode of ['daily', 'easy', 'medium', 'hard', 'expert']) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: false });
     const page = await ctx.newPage();
     const errors = [];
