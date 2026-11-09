@@ -18,7 +18,7 @@ No build step. Serve the folder and open `index.html`:
 - Add it to your home screen for a full-screen app (dark theme, content sits below the status bar).
 - Drag to trace; let go to place the word. A path that fits no slot stays selected (never auto-clears): keep dragging from its end, drag back to drop a letter, or tap the x / outside the board to clear.
   Dragging out from the last tile of a wrong word picks it back up so you can extend it; tapping a wrong word removes it. You can also tap tiles one by one and tap the last tile again to place.
-- The board takes all the room the rest of the screen leaves (no empty gap); on a very small phone it stops at a minimum size and the page scrolls a little. How to play is behind the `?` button; puzzle choice behind the gear.
+- The board is always the full width of the screen; if the rest doesn't fit underneath on a small phone, the page scrolls. How to play is behind the `?` button; puzzle choice behind the gear.
 - Installed as an app the status bar is solid (content starts below it, so no iOS blur) and the page is true black to match.
 - On a win you get an image of the solved board (snakes and letters) to share or copy, instead of emoji.
 - Each board has one fixed set of answer words. Whatever you trace fills the slot with that many letters
@@ -38,7 +38,7 @@ No build step. Serve the folder and open `index.html`:
 - `tools/test-generator.js` – generator validity test (`node tools/test-generator.js`)
 - `tools/e2e.js` – Playwright test that solves each mode through the real UI
 - `tools/test-resilience.js` – the loading screen can never hang: page/script version skew and a crashing script end in a working game or a visible error with a Reload button
-- `tools/test-ux.js` – Playwright checks for natural dragging (resume, drag-back, pick-up) and that the board fills the screen at 4 phone sizes x 4 modes
+- `tools/test-ux.js` – Playwright checks for natural dragging (resume, drag-back, pick-up) and that the board is full width at 4 phone sizes x 4 modes
 
 ## Deploy (Cloudflare Pages)
 
