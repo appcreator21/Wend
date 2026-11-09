@@ -16,7 +16,10 @@ No build step. Serve the folder and open `index.html`:
   Word lengths always climb by one starting at 4: Easy = 4 words (4-7 letters, 5x5), Medium = 5 (4-8, 6x6), Hard = 6 (4-9, 7x7), Expert = 7 (4-10, 8x8). Unused cells are blocked.
 - The app reopens in whichever mode you used last.
 - Add it to your home screen for a full-screen app (dark theme, content sits below the status bar).
-- Drag to trace, or tap tiles and tap the last one again (or press Enter) to submit. Tap a placed word or press Undo to remove it. Puzzle choice lives behind the gear icon.
+- Drag to trace; let go to place the word. A path that fits no slot stays selected (never auto-clears): keep dragging from its end, drag back to drop a letter, or tap the x / outside the board to clear.
+  Dragging out from the last tile of a wrong word picks it back up so you can extend it; tapping a wrong word removes it. You can also tap tiles one by one and tap the last tile again to place.
+- Everything fits one screen with no scrolling (the board resizes to the available height). How to play is behind the `?` button; puzzle choice behind the gear.
+- On a win you get an image of the solved board (snakes and letters) to share or copy, instead of emoji.
 - Each board has one fixed set of answer words. Whatever you trace fills the slot with that many letters
   (a wrong word replaces the previous wrong one); only the correct word gets a green check, locks in and counts.
   The puzzle is solved when every slot is correct.
@@ -33,6 +36,7 @@ No build step. Serve the folder and open `index.html`:
 - `data/words.js` – pool of puzzle answers, built by `tools/build-words.js`
 - `tools/test-generator.js` – generator validity test (`node tools/test-generator.js`)
 - `tools/e2e.js` – Playwright test that solves each mode through the real UI
+- `tools/test-ux.js` – Playwright checks for natural dragging (resume, drag-back, pick-up) and that the layout fits one screen
 
 ## Deploy (Cloudflare Pages)
 

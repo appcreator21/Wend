@@ -19,7 +19,8 @@ const shotDir = process.argv[2];
     const center = async (i) => (await page.locator(`.tile[data-i="${i}"]`).boundingBox());
     // A wrong word still fills the slot of its length, but without a green check; the real word then replaces it.
     {
-      const wrong = sol[0].path.slice().reverse();
+      // first four tiles of a longer word: a 4-letter 'word' that is wrong (it can't be the real 4-letter answer)
+      const wrong = sol.find((s) => s.path.length >= 5).path.slice(0, 4);
       const b0 = await center(wrong[0]);
       await page.mouse.move(b0.x + b0.width / 2, b0.y + b0.height / 2);
       await page.mouse.down();

@@ -31,43 +31,70 @@
 </head>
 <body>
 
-<!-- Loading screen: four words wend around a 4x4 board, one colour at a time, until every tile is used. -->
+<!-- Loading screen: four long words wind across a board one after another until every tile is used. -->
 <div id="loader" class="loader" role="status" aria-live="polite">
   <div class="loader-inner">
     <div class="loader-title">Wend</div>
-    <svg class="loader-board" viewBox="0 0 400 400" aria-hidden="true">
-      <rect x="3" y="3" width="394" height="394" rx="26" class="lb-frame"/>
+    <svg class="loader-board" viewBox="0 0 500 500" aria-hidden="true">
+      <rect x="3" y="3" width="494" height="494" rx="26" class="lb-frame"/>
+      <rect class="lb-blocked" x="203" y="3" width="94" height="94" rx="8"/>
+      <rect class="lb-blocked" x="303" y="3" width="94" height="94" rx="8"/>
+      <rect class="lb-blocked" x="203" y="203" width="94" height="94" rx="8"/>
       <g class="lb lb0">
-        <rect x="0" y="0" width="200" height="200" class="lb-tint t0"/>
-        <polyline pathLength="1" points="50,50 150,50 150,150 50,150" class="lb-snake s0"/>
-        <text x="50" y="52">W</text>
-        <text x="150" y="52">E</text>
-        <text x="150" y="152">N</text>
-        <text x="50" y="152">D</text>
+        <rect class="lb-tint t0" x="200" y="100" width="100" height="100"/>
+        <rect class="lb-tint t0" x="100" y="100" width="100" height="100"/>
+        <rect class="lb-tint t0" x="100" y="0" width="100" height="100"/>
+        <rect class="lb-tint t0" x="0" y="0" width="100" height="100"/>
+        <polyline pathLength="1" points="250,150 150,150 150,50 50,50" class="lb-snake s0"/>
+        <text x="250" y="152">G</text>
+        <text x="150" y="152">E</text>
+        <text x="150" y="52">A</text>
+        <text x="50" y="52">R</text>
       </g>
       <g class="lb lb1">
-        <rect x="200" y="0" width="200" height="200" class="lb-tint t1"/>
-        <polyline pathLength="1" points="250,50 350,50 350,150 250,150" class="lb-snake s1"/>
-        <text x="250" y="52">W</text>
-        <text x="350" y="52">O</text>
-        <text x="350" y="152">R</text>
-        <text x="250" y="152">D</text>
+        <rect class="lb-tint t1" x="400" y="0" width="100" height="100"/>
+        <rect class="lb-tint t1" x="400" y="100" width="100" height="100"/>
+        <rect class="lb-tint t1" x="300" y="100" width="100" height="100"/>
+        <rect class="lb-tint t1" x="300" y="200" width="100" height="100"/>
+        <rect class="lb-tint t1" x="400" y="200" width="100" height="100"/>
+        <polyline pathLength="1" points="450,50 450,150 350,150 350,250 450,250" class="lb-snake s1"/>
+        <text x="450" y="52">Y</text>
+        <text x="450" y="152">O</text>
+        <text x="350" y="152">U</text>
+        <text x="350" y="252">N</text>
+        <text x="450" y="252">G</text>
       </g>
       <g class="lb lb2">
-        <rect x="0" y="200" width="200" height="200" class="lb-tint t2"/>
-        <polyline pathLength="1" points="50,250 150,250 150,350 50,350" class="lb-snake s2"/>
-        <text x="50" y="252">P</text>
-        <text x="150" y="252">A</text>
-        <text x="150" y="352">T</text>
-        <text x="50" y="352">H</text>
+        <rect class="lb-tint t2" x="0" y="100" width="100" height="100"/>
+        <rect class="lb-tint t2" x="0" y="200" width="100" height="100"/>
+        <rect class="lb-tint t2" x="100" y="200" width="100" height="100"/>
+        <rect class="lb-tint t2" x="100" y="300" width="100" height="100"/>
+        <rect class="lb-tint t2" x="0" y="300" width="100" height="100"/>
+        <rect class="lb-tint t2" x="0" y="400" width="100" height="100"/>
+        <polyline pathLength="1" points="50,150 50,250 150,250 150,350 50,350 50,450" class="lb-snake s2"/>
+        <text x="50" y="152">P</text>
+        <text x="50" y="252">O</text>
+        <text x="150" y="252">S</text>
+        <text x="150" y="352">I</text>
+        <text x="50" y="352">N</text>
+        <text x="50" y="452">G</text>
       </g>
       <g class="lb lb3">
-        <rect x="200" y="200" width="200" height="200" class="lb-tint t3"/>
-        <polyline pathLength="1" points="250,250 350,250 350,350 250,350" class="lb-snake s3"/>
-        <text x="250" y="252">F</text>
-        <text x="350" y="252">I</text>
-        <text x="350" y="352">N</text>
-        <text x="250" y="352">D</text>
+        <rect class="lb-tint t3" x="100" y="400" width="100" height="100"/>
+        <rect class="lb-tint t3" x="200" y="400" width="100" height="100"/>
+        <rect class="lb-tint t3" x="200" y="300" width="100" height="100"/>
+        <rect class="lb-tint t3" x="300" y="300" width="100" height="100"/>
+        <rect class="lb-tint t3" x="300" y="400" width="100" height="100"/>
+        <rect class="lb-tint t3" x="400" y="400" width="100" height="100"/>
+        <rect class="lb-tint t3" x="400" y="300" width="100" height="100"/>
+        <polyline pathLength="1" points="150,450 250,450 250,350 350,350 350,450 450,450 450,350" class="lb-snake s3"/>
+        <text x="150" y="452">T</text>
+        <text x="250" y="452">R</text>
+        <text x="250" y="352">A</text>
+        <text x="350" y="352">C</text>
+        <text x="350" y="452">T</text>
+        <text x="450" y="452">O</text>
+        <text x="450" y="352">R</text>
       </g>
     </svg>
     <div class="loader-tag" aria-hidden="true">
@@ -94,6 +121,9 @@
     <div class="right">
       <button id="undoIcon" class="icon-btn muted" aria-label="Undo">
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+      </button>
+      <button id="helpBtn" class="icon-btn" aria-label="How to play">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9"/><path d="M12 17h.01"/></svg>
       </button>
       <button id="settingsBtn" class="icon-btn" aria-label="Settings and puzzle choice">
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
@@ -123,21 +153,8 @@
   <section class="actions">
     <button id="undoBtn" class="pill">Undo</button>
     <button id="hintBtn" class="pill">Hint</button>
+    <button id="resultsBtn" class="pill results" hidden>See results</button>
   </section>
-
-  <details class="how">
-    <summary>How to play</summary>
-    <ul>
-      <li>Drag across neighbouring tiles &mdash; up, down, left or right, never diagonally &mdash; and let go to place the word.</li>
-      <li>It fills the slot with that many letters. Only the <b>correct</b> word gets a green check and locks in.</li>
-      <li>Every open tile is used <b>exactly once</b>. No overlaps, no leftovers.</li>
-      <li>Wrong word? Tap it (on the board or in its slot) to remove it, or just trace a new one over it.</li>
-      <li>Prefer tapping? Tap tiles one by one, then tap the last tile again to place it.</li>
-    </ul>
-  </details>
-
-  <button id="resultsBtn" class="results" disabled>See results</button>
-  <p class="foot">Fan-made practice game inspired by LinkedIn's Wend. Not affiliated with LinkedIn.</p>
 </main>
 
 <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
@@ -162,16 +179,31 @@
   </div>
 </dialog>
 
+<dialog id="helpDlg">
+  <h2>How to play</h2>
+  <ul class="how">
+    <li>Drag across neighbouring tiles &mdash; up, down, left or right, never diagonally &mdash; to trace a word.</li>
+    <li>Let go and it fills the slot with that many letters. Only the <b>correct</b> word gets a green check and locks in.</li>
+    <li>Every open tile is used <b>exactly once</b>. No overlaps, no leftovers.</li>
+    <li>Not enough letters yet? Just pick up where you left off and keep dragging. Drag back over the last tile to undo a letter.</li>
+    <li>Wrong word? Tap it to remove it, drag from its last tile to extend it, or trace a new one over it.</li>
+    <li>Prefer tapping? Tap tiles one by one, then tap the last tile again to place it.</li>
+  </ul>
+  <p class="fine">Fan-made practice game inspired by LinkedIn's Wend. Not affiliated with LinkedIn.</p>
+  <form method="dialog"><button class="primary">Got it</button></form>
+</dialog>
+
 <dialog id="winDlg">
   <h2>Solved!</h2>
+  <img id="winImg" class="win-img" alt="Your solved puzzle">
   <p id="winStats"></p>
-  <pre id="shareText" class="share"></pre>
   <div class="dlg-stack">
     <button id="nextBtn" class="primary">Next puzzle</button>
     <div class="dlg-actions">
-      <button id="shareBtn">Copy result</button>
-      <form method="dialog"><button>Close</button></form>
+      <button id="shareBtn">Share image</button>
+      <button id="copyBtn">Copy image</button>
     </div>
+    <form method="dialog"><button class="plain">Close</button></form>
   </div>
 </dialog>
 

@@ -14,13 +14,13 @@
   const els = {
     board: $('board'), frame: $('frame'), slots: $('slots'), current: $('current'), toast: $('toast'), timer: $('timer'),
     modes: $('modes'), undo: $('undoBtn'), undoIcon: $('undoIcon'), hint: $('hintBtn'), newBtn: $('newBtn'), results: $('resultsBtn'),
-    win: $('winDlg'), winStats: $('winStats'), share: $('shareText'), shareBtn: $('shareBtn'), settings: $('settingsDlg'),
+    win: $('winDlg'), winStats: $('winStats'), winImg: $('winImg'), shareBtn: $('shareBtn'), copyBtn: $('copyBtn'), settings: $('settingsDlg'), helpDlg: $('helpDlg'),
     clearChip: $('clearChip'), progBar: $('progBar'), progText: $('progText'), loader: $('loader'), confetti: $('confetti'),
     sound: $('soundToggle'), haptic: $('hapticToggle'), nextBtn: $('nextBtn'),
   };
 
   let mode = 'daily', startToken = 0;
-  let puzzle, placed, slotWords, path, dragging, moved, tapWrong, lastPt, enterTile, startedAt, elapsed, timerId, solved, hints, hintCell, practiceN = 0;
+  let puzzle, placed, slotWords, path, dragging, moved, tapWrong, pickup, shareBlob, lastPt, enterTile, startedAt, elapsed, timerId, solved, hints, hintCell, practiceN = 0;
 
   // ---------- persistence (all optional) ----------
   const store = {
@@ -148,9 +148,10 @@
       puzzle = p;
       puzzle.difficulty = difficulty;
       placed = []; path = [];
-      dragging = false; moved = false; tapWrong = null; solved = false; hints = 0; hintCell = -1; enterTile = -1; lastPt = null;
+      dragging = false; moved = false; tapWrong = null; pickup = null; solved = false; hints = 0; hintCell = -1; enterTile = -1; lastPt = null;
       startedAt = 0; elapsed = 0;
       slotWords = puzzle.lengths.map((len, k) => ({ len, color: SLOT_COLORS[k % COLORS], answer: puzzle.solution.find((x) => x.word.length === len).word, placed: null }));
+      $('app').style.setProperty('--slots-h', slotWords.length * 29 + 'px');
       els.newBtn.hidden = mode === 'daily';
       [...els.modes.querySelectorAll('button')].forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
       els.board.classList.remove('win');
@@ -241,11 +242,12 @@
     els.current.textContent = path.length ? word : solved ? 'Puzzle solved!' : placed.length ? 'Tap a wrong word to remove it' : 'Drag across tiles to spell a word';
     els.clearChip.hidden = !path.length;
 
-    els.results.disabled = !solved;
+    els.results.hidden = !solved;
     els.results.classList.toggle('ready', solved);
-    els.undo.disabled = solved;
+    els.undo.hidden = solved;
+    els.hint.hidden = solved;
+    els.undo.disabled = !path.length && !placed.length;
     els.undoIcon.disabled = solved || (!path.length && !placed.length);
-    els.hint.disabled = solved;
     els.board.classList.toggle('win', solved);
 
     // Progress: one segment per word
@@ -310,13 +312,15 @@
   function submit() {
     if (solved || !path.length) return;
     const word = path.map((i) => puzzle.letters[i]).join('');
-    const clearSoon = () => setTimeout(() => { path = []; render(); }, 300);
     // The word goes into the slot with that many letters: an empty one first, else one holding a wrong word.
     const slots = slotWords.filter((x) => x.len === word.length);
     const slot = slots.find((x) => !x.placed) || slots.find((x) => !x.placed.correct);
     if (!slot) {
-      toast(slots.length ? 'You already found the ' + word.length + '-letter word' : (word.length < 4 ? 'Words are at least 4 letters' : 'No ' + word.length + '-letter word in this puzzle'));
-      shake(); sfx.wrong(); buzz(30); clearSoon(); return;
+      // Nothing to place yet: keep the path selected so the player can keep dragging, drag back to
+      // drop a letter, or clear it. (Never auto-clear.)
+      if (word.length < 4) toast('Keep going \u2014 words start at 4 letters');
+      else { toast(slots.length ? 'You already found the ' + word.length + '-letter word' : 'No ' + word.length + '-letter word here \u2014 keep going or drag back'); shake(); sfx.wrong(); buzz(30); }
+      return;
     }
     // Replace the slot's previous (wrong) word and any wrong words this path runs over.
     const mine = new Set(path);
@@ -370,26 +374,128 @@
     const time = els.timer.textContent;
     els.winStats.textContent = NAMES[puzzle.difficulty] + ' solved in ' + time + (hints ? ' with ' + hints + ' hint' + (hints > 1 ? 's' : '') : '') + streakLine +
       ' \u00b7 ' + today.count + ' solved today';
-    els.share.textContent = shareText(time);
+    const imageReady = makeShareImage(time);
     els.nextBtn.textContent = mode === 'daily' ? 'Play ' + NAMES[store.get('wend.practice', 'hard')] + ' puzzles' : 'Next puzzle';
     setTimeout(() => { sfx.win(); buzz([20, 50, 20, 50, 60]); confetti(); }, 250);
-    setTimeout(() => (els.win.showModal ? els.win.showModal() : alert(els.share.textContent)), 1500);
+    setTimeout(async () => { await imageReady; if (els.win.showModal) els.win.showModal(); }, 1500);
   }
 
-  function shareText(time) {
-    const grid = [];
-    for (let r = 0; r < puzzle.rows; r++) {
-      let line = '';
-      for (let c = 0; c < puzzle.cols; c++) {
-        const i = r * puzzle.cols + c;
-        if (!puzzle.letters[i]) { line += '⬛'; continue; }
-        const p = placed.find((q) => q.path.includes(i));
-        line += ['🟦', '🟧', '🟪', '🟩', '🟥', '🟦', '🟨'][p.color % 7];
+  // ---------- share image: the solved board itself ----------
+  const PALETTE = ['#00b4d8', '#f58a00', '#a259e6', '#4fbf1a', '#f43f6e', '#6b6bf2', '#e6c200'];
+  const mix = (hex, bg, t) => {
+    const p = (h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
+    const a = p(hex), b = p(bg);
+    return 'rgb(' + a.map((v, k) => Math.round(v * t + b[k] * (1 - t))).join(',') + ')';
+  };
+
+  function drawShareCanvas(time) {
+    const BG = '#1b1f23', cols = puzzle.cols, rows = puzzle.rows, n = slotWords.length;
+    const W = 1080, pad = 64, frameW = W - pad * 2, cell = (frameW - 16) / cols, boardH = cell * rows + 16;
+    const rowH = 62, headerH = 190, wordsH = n * rowH + 10, footerH = 120;
+    const H = headerH + boardH + 44 + wordsH + footerH;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    const font = (w, s) => w + ' ' + s + 'px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+    const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); };
+
+    // header
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#f1f3f5'; ctx.font = font(800, 96); ctx.fillText('Wend', pad, 118);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#9aa4af'; ctx.font = font(700, 40);
+    ctx.fillText((mode === 'daily' ? 'Daily ' : '') + NAMES[puzzle.difficulty], W - pad, 78);
+    ctx.fillStyle = '#f1f3f5'; ctx.font = font(800, 52); ctx.fillText(time + (hints ? '  ·  ' + hints + ' hint' + (hints > 1 ? 's' : '') : ''), W - pad, 134);
+
+    // board frame + cells
+    const bx = pad, by = headerH;
+    ctx.fillStyle = '#e8e8e8'; rr(bx, by, frameW, boardH, 30); ctx.fill();
+    const ox = bx + 8, oy = by + 8;
+    const wordOf = new Map(); // cell -> solution entry
+    puzzle.solution.forEach((s) => s.path.forEach((c) => wordOf.set(c, s)));
+    const colorOf = (s) => PALETTE[slotWords.find((x) => x.answer === s.word).color];
+    ctx.save(); rr(ox, oy, cell * cols, cell * rows, 22); ctx.clip();
+    puzzle.letters.forEach((ch, i) => {
+      const r = Math.floor(i / cols), c = i % cols, x = ox + c * cell, y = oy + r * cell;
+      const me = ch ? wordOf.get(i) : 'b';
+      const diff = (rr2, cc2) => rr2 >= 0 && rr2 < rows && cc2 >= 0 && cc2 < cols && (puzzle.letters[rr2 * cols + cc2] ? wordOf.get(rr2 * cols + cc2) : 'b') !== me;
+      const g2 = 4, l = diff(r, c - 1) ? g2 : 0, rt = diff(r, c + 1) ? g2 : 0, t = diff(r - 1, c) ? g2 : 0, bm = diff(r + 1, c) ? g2 : 0;
+      ctx.fillStyle = ch ? mix(colorOf(me), BG, 0.3) : '#6b6b6b';
+      ctx.fillRect(x + l, y + t, cell - l - rt, cell - t - bm);
+    });
+    ctx.restore();
+
+    // snakes, chevrons, start badges, letters
+    const cxy = (i) => [ox + (i % cols) * cell + cell / 2, oy + Math.floor(i / cols) * cell + cell / 2];
+    puzzle.solution.forEach((s) => {
+      ctx.strokeStyle = ctx.fillStyle = colorOf(s); ctx.lineWidth = cell * 0.64; ctx.lineCap = ctx.lineJoin = 'round';
+      ctx.beginPath(); s.path.forEach((c, k) => { const [x, y] = cxy(c); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+      const [sx, sy] = cxy(s.path[0]);
+      ctx.beginPath(); ctx.arc(sx, sy, cell * 0.325, 0, 7); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.stroke();
+    });
+    puzzle.solution.forEach((s) => {
+      ctx.strokeStyle = 'rgba(20,24,28,.55)'; ctx.lineWidth = Math.max(3, cell * 0.05); ctx.lineCap = ctx.lineJoin = 'round';
+      for (let k = 1; k < s.path.length; k++) {
+        const [x0, y0] = cxy(s.path[k - 1]), [x1, y1] = cxy(s.path[k]);
+        const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, dx = Math.sign(x1 - x0), dy = Math.sign(y1 - y0), px = -dy, py = dx, q = cell;
+        ctx.beginPath();
+        ctx.moveTo(mx - dx * 0.05 * q + px * 0.11 * q, my - dy * 0.05 * q + py * 0.11 * q);
+        ctx.lineTo(mx + dx * 0.07 * q, my + dy * 0.07 * q);
+        ctx.lineTo(mx - dx * 0.05 * q - px * 0.11 * q, my - dy * 0.05 * q - py * 0.11 * q);
+        ctx.stroke();
       }
-      grid.push(line);
-    }
-    const label = mode === 'daily' ? 'Wend ' + todayKey() + ' (' + puzzle.difficulty + ')' : 'Wend (' + puzzle.difficulty + ')';
-    return label + '\n' + time + (hints ? ' · ' + hints + ' hint' + (hints > 1 ? 's' : '') : '') + '\n' + grid.join('\n');
+    });
+    ctx.fillStyle = '#14181c'; ctx.font = font(800, Math.round(cell * 0.46)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    puzzle.letters.forEach((ch, i) => { if (ch) { const [x, y] = cxy(i); ctx.fillText(ch, x, y + cell * 0.03); } });
+    puzzle.solution.forEach((s) => {
+      const [x0, y0] = cxy(s.path[0]), [x1, y1] = cxy(s.path[1]);
+      const dx = Math.sign(x1 - x0), dy = Math.sign(y1 - y0);
+      const bxp = x0 + (dx ? -dx : 1) * cell * 0.3, byp = y0 + (dx ? -1 : -dy) * cell * 0.3, r = cell * 0.15;
+      ctx.beginPath(); ctx.arc(bxp, byp, r, 0, 7); ctx.fillStyle = BG; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = colorOf(s); ctx.stroke();
+      ctx.strokeStyle = '#38d9a9'; ctx.lineWidth = Math.max(4, r * 0.3); ctx.lineCap = ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(bxp - r * 0.45, byp); ctx.lineTo(bxp - r * 0.1, byp + r * 0.4); ctx.lineTo(bxp + r * 0.5, byp - r * 0.4); ctx.stroke();
+    });
+
+    // the words, as coloured tiles with checks
+    const tile = 50, gap = 6; let wy = by + boardH + 44;
+    slotWords.forEach((s) => {
+      s.answer.split('').forEach((ch, k) => {
+        const x = pad + k * (tile + gap);
+        ctx.fillStyle = PALETTE[s.color]; rr(x, wy, tile, tile, 10); ctx.fill();
+        ctx.fillStyle = '#14181c'; ctx.font = font(800, 30); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ch, x + tile / 2, wy + tile / 2 + 2);
+      });
+      const ex = pad + s.answer.length * (tile + gap) + 14;
+      ctx.strokeStyle = '#38d9a9'; ctx.lineWidth = 6; ctx.lineCap = ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(ex, wy + 26); ctx.lineTo(ex + 11, wy + 37); ctx.lineTo(ex + 30, wy + 13); ctx.stroke();
+      wy += rowH;
+    });
+
+    // footer
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#9aa4af'; ctx.font = font(600, 34);
+    const d = new Date();
+    ctx.fillText(d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) + '  ·  use every tile once', W / 2, H - 52);
+    return cv;
+  }
+
+  function makeShareImage(time) {
+    return new Promise((resolve) => {
+      let cv;
+      try { cv = drawShareCanvas(time); } catch (e) { resolve(); return; }
+      cv.toBlob((blob) => {
+        if (!blob) { resolve(); return; }
+        shareBlob = blob;
+        if (els.winImg.dataset.url) URL.revokeObjectURL(els.winImg.dataset.url);
+        els.winImg.dataset.url = URL.createObjectURL(blob);
+        els.winImg.src = els.winImg.dataset.url;
+        resolve();
+      }, 'image/png');
+    });
+  }
+
+  const shareCaption = () => 'Wend ' + (mode === 'daily' ? 'Daily ' : '') + NAMES[puzzle.difficulty] + ' — solved in ' + els.timer.textContent + (hints ? ' with ' + hints + ' hint' + (hints > 1 ? 's' : '') : '');
+  const flash = (btn, text, label) => { btn.textContent = text; setTimeout(() => { btn.textContent = label; }, 1600); };
+  function downloadShare() {
+    const a = document.createElement('a'); a.href = els.winImg.dataset.url; a.download = 'wend-puzzle.png'; document.body.appendChild(a); a.click(); a.remove();
   }
 
   function hint() {
@@ -445,11 +551,24 @@
     return puzzle.letters[i] ? i : -1;
   }
 
+  function detach(entry) {
+    placed = placed.filter((p) => p !== entry);
+    slotWords.forEach((s) => { if (s.placed === entry) s.placed = null; });
+  }
+
   function consider(gx, gy, locked) {
     const i = cellAt(gx, gy, true);
     if (i < 0 || locked.has(i)) return;
-    const last = path[path.length - 1];
+    let last = path[path.length - 1];
     if (i === last) return;
+    if (pickup && path.length === 1) {
+      // Dragging out from the last tile of a wrong word picks that word back up, so you can extend it
+      // (drag onward) or shorten it (drag back over its previous tile).
+      const pp = pickup.path, back = pp[pp.length - 2];
+      if (i === back || (neighbours(last, puzzle.rows, puzzle.cols).includes(i) && !pp.includes(i))) {
+        path = pp.slice(); detach(pickup); pickup = null; tapWrong = null; last = path[path.length - 1];
+      } else return;
+    }
     if (path.length > 1 && i === path[path.length - 2]) { path.pop(); moved = true; sfx.back(); render(); return; }
     if (!path.includes(i) && neighbours(last, puzzle.rows, puzzle.cols).includes(i)) {
       path.push(i); moved = true; enterTile = i;
@@ -467,14 +586,16 @@
     if (locked.has(i)) return;
     ensureTimer();
     e.preventDefault();
-    hintCell = -1; moved = false; tapWrong = null; lastPt = g; dragging = true;
+    hintCell = -1; moved = false; tapWrong = null; pickup = null; lastPt = g; dragging = true;
     const last = path[path.length - 1];
     if (path.length && i === last) { dragging = 'maybeSubmit'; }
     else if (path.includes(i)) { path = path.slice(0, path.indexOf(i) + 1); }
     else if (path.length && neighbours(last, puzzle.rows, puzzle.cols).includes(i)) { path.push(i); enterTile = i; sfx.step(path.length); buzz(6); }
     else {
       path = [i]; enterTile = i; sfx.step(1); buzz(6);
-      tapWrong = placed.find((p) => !p.correct && p.path.includes(i)) || null; // a plain tap on a wrong word removes it
+      const wp = placed.find((p) => !p.correct && p.path.includes(i)) || null;
+      tapWrong = wp; // a plain tap on a wrong word removes it
+      if (wp && wp.path[wp.path.length - 1] === i) pickup = wp; // ...but dragging out from its last tile picks it back up
     }
     try { els.frame.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     render();
@@ -525,9 +646,19 @@
   els.nextBtn.addEventListener('click', () => { els.win.close(); start(mode === 'daily' ? store.get('wend.practice', 'hard') : mode); });
   els.modes.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { els.settings.close(); start(b.dataset.mode); } });
   $('settingsBtn').addEventListener('click', () => els.settings.showModal());
+  $('helpBtn').addEventListener('click', () => els.helpDlg.showModal());
   els.shareBtn.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(els.share.textContent); els.shareBtn.textContent = 'Copied!'; }
-    catch (e) { els.shareBtn.textContent = 'Select & copy above'; }
+    if (!shareBlob) return;
+    const file = new File([shareBlob], 'wend-puzzle.png', { type: 'image/png' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: 'Wend', text: shareCaption() });
+      else { downloadShare(); flash(els.shareBtn, 'Saved!', 'Share image'); }
+    } catch (e) { /* share sheet dismissed */ }
+  });
+  els.copyBtn.addEventListener('click', async () => {
+    if (!shareBlob) return;
+    try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': shareBlob })]); flash(els.copyBtn, 'Copied!', 'Copy image'); }
+    catch (e) { downloadShare(); flash(els.copyBtn, 'Saved instead', 'Copy image'); }
   });
   document.addEventListener('keydown', (e) => {
     if (document.querySelector('dialog[open]')) return;
