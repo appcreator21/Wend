@@ -29,19 +29,36 @@
   }
 </script>
 <script>
-  // If the game fails to start (or is slow), say so instead of showing the loading animation forever.
+  // Safety net: the loading screen can never spin forever.
+  //  - any error while it's still showing -> error panel with a Reload button
+  //  - after 8s, if the game is actually running behind it, the loader is removed anyway
+  //  - after 12s with no game, the error panel appears
+  //  - add ?reset to the address to clear saved settings and caches
   (function () {
-    function started() { return window.__wend && window.__wend.puzzle; }
+    try {
+      if (/[?&]reset\b/.test(location.search)) {
+        localStorage.clear();
+        if (window.caches) caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
+      }
+    } catch (e) { /* ignore */ }
+    function loaderUp() { var l = document.getElementById('loader'); return l && !l.hidden && !l.classList.contains('hide'); }
+    function running() { return window.__wend && window.__wend.puzzle; }
     function fail(msg) {
-      if (started()) return;
+      if (!loaderUp()) return;
       var box = document.getElementById('loadError'), note = document.getElementById('loadErrorNote');
       if (!box) return;
       box.hidden = false;
       if (note && msg) note.textContent = String(msg).slice(0, 160);
     }
+    window.__loadFailed = fail;
     window.addEventListener('error', function (e) { fail(e && e.message); });
     window.addEventListener('unhandledrejection', function (e) { fail(e && e.reason && (e.reason.message || e.reason)); });
-    setTimeout(function () { fail('Taking longer than expected'); }, 12000);
+    setTimeout(function () {
+      if (!loaderUp()) return;
+      var box = document.getElementById('loadError');
+      if (running() && box && box.hidden) { document.getElementById('loader').hidden = true; } else if (!running()) fail('Taking longer than expected');
+    }, 8000);
+    setTimeout(function () { if (!running()) fail('Taking longer than expected'); }, 12000);
   })();
 </script>
 </head>

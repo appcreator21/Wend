@@ -99,9 +99,11 @@
   }
 
   // ---------- unlimited puzzles ----------
-  // Fresh boards are generated on demand in a background worker (so the loading animation stays smooth),
-  // and the next one is prepared while you play, so "new puzzle" is usually instant.
-  const gen = { worker: undefined, pending: new Map(), next: {}, id: 0 };
+  // Practice boards are generated fresh. A background worker prepares the NEXT one while you play, purely as a
+  // speed-up: starting a puzzle never waits for the worker. If a prepared board isn't ready (or the worker is
+  // unavailable) the board is generated right here, with a hard time limit and a pre-checked board as a fallback,
+  // so the loading screen can't hang.
+  const gen = { worker: undefined, pending: new Map(), ready: {}, asked: {}, id: 0 };
   function getWorker() {
     if (gen.worker !== undefined) return gen.worker;
     try {
@@ -116,19 +118,26 @@
     } catch (err) { gen.worker = null; }
     return gen.worker;
   }
-  function requestPuzzle(difficulty) {
-    const seed = 'wend-' + difficulty + '-' + Date.now() + '-' + Math.random();
-    const inline = () => generate({ seed, difficulty, answers: window.WEND_ANSWERS });
+  function prefetch(difficulty) {
+    if (gen.ready[difficulty] || gen.asked[difficulty]) return;
     const w = getWorker();
-    if (!w) return Promise.resolve().then(inline);
-    return new Promise((resolve, reject) => { const id = ++gen.id; gen.pending.set(id, { resolve, reject }); w.postMessage({ id, difficulty, seed }); })
-      .catch(inline);
+    if (!w) return;
+    gen.asked[difficulty] = true;
+    const id = ++gen.id, seed = 'wend-' + difficulty + '-' + Date.now() + '-' + Math.random();
+    new Promise((resolve, reject) => { gen.pending.set(id, { resolve, reject }); w.postMessage({ id, difficulty, seed, maxMs: 20000 }); })
+      .then((p) => { gen.ready[difficulty] = p; })
+      .catch(() => { /* optional speed-up: ignore */ })
+      .then(() => { gen.asked[difficulty] = false; });
   }
-  const prefetch = (difficulty) => { if (!gen.next[difficulty]) gen.next[difficulty] = requestPuzzle(difficulty); };
   function takePuzzle(difficulty) {
-    const p = gen.next[difficulty] || requestPuzzle(difficulty);
-    gen.next[difficulty] = null;
-    return p;
+    const p = gen.ready[difficulty];
+    gen.ready[difficulty] = null;
+    if (p) return Promise.resolve(p);
+    // Not prepared: generate here, after a short delay so the loading screen can paint first.
+    return new Promise((resolve) => setTimeout(() => {
+      try { resolve(generate({ seed: 'wend-' + difficulty + '-' + Date.now() + '-' + Math.random(), difficulty, answers: window.WEND_ANSWERS, maxMs: 4000 })); }
+      catch (err) { resolve(fromPool(difficulty)); }
+    }, 40));
   }
 
   // ---------- setup ----------
@@ -142,10 +151,11 @@
     const difficulty = mode === 'daily' ? DAILY_BY_WEEKDAY[new Date().getDay()] : mode;
     // Daily boards come from the shared pool so everyone gets the same one; practice boards are generated fresh.
     const ready = mode === 'daily'
-      ? Promise.resolve().then(() => fromPool(difficulty) || generate({ seed: 'wend-daily-' + todayKey(), difficulty, answers: window.WEND_ANSWERS }))
-      : Promise.race([takePuzzle(difficulty), new Promise((res) => setTimeout(() => res(fromPool(difficulty)), 30000))]);
+      ? Promise.resolve().then(() => fromPool(difficulty) || generate({ seed: 'wend-daily-' + todayKey(), difficulty, answers: window.WEND_ANSWERS, maxMs: 4000 }))
+      : takePuzzle(difficulty);
     ready.then((p) => {
       if (token !== startToken) return; // a newer start() superseded this one
+      if (!p) throw new Error('no puzzle available');
       puzzle = p;
       puzzle.difficulty = difficulty;
       placed = []; path = [];
@@ -161,6 +171,9 @@
       hideLoader(Math.max(0, (first ? 2600 : 1300) - (Date.now() - t0)));
       // Get the next puzzle ready in the background (the one you'll most likely play next).
       prefetch(mode === 'daily' ? store.get('wend.practice', 'hard') : mode);
+    }).catch((err) => {
+      // Never leave the loading screen spinning: say what went wrong and offer a reload.
+      if (window.__loadFailed) window.__loadFailed(err && err.message ? err.message : String(err));
     });
   }
 

@@ -46,6 +46,43 @@ const check = (name, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + name
     check('a script that never starts is caught by the watchdog', await page.locator('#loadError').isVisible());
   }
 
+  // 4. the background worker is unavailable and the app reopens in a saved practice mode (Hard): must still load fast
+  {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { try { localStorage.setItem('wend.mode', '"hard"'); } catch (e) { /* ignore */ } });
+    await page.route(/gen-worker\.js/, (route) => route.fulfill({ status: 404, body: 'nope' }));
+    const t0 = Date.now();
+    await page.goto(base);
+    await page.waitForSelector('#loader', { state: 'hidden', timeout: 9000 }).catch(() => {});
+    const ok = await page.evaluate(() => !!(window.__wend && window.__wend.puzzle && window.__wend.puzzle.difficulty === 'hard'));
+    check('saved Hard mode loads even though the worker is unavailable', ok, (Date.now() - t0) + 'ms');
+  }
+
+  // 5. a bad pool entry makes startup throw -> visible error, not an endless loader
+  {
+    const page = await (await browser.newContext()).newPage();
+    await page.route(/data\/puzzles\.js/, (route) => route.fulfill({ contentType: 'application/javascript', body: 'window.WEND_POOL={easy:[{s:null}],medium:[{s:null}],hard:[{s:null}],expert:[{s:null}]};' }));
+    await page.goto(base);
+    await page.waitForSelector('#loadError:not([hidden])', { timeout: 6000 }).catch(() => {});
+    check('a startup exception shows the error panel', await page.locator('#loadError').isVisible());
+  }
+
+  // 6. the game crashes AFTER choosing a puzzle (the case that used to leave the loader looping silently)
+  if (/^https?:\/\/localhost/.test(base)) {
+    const page = await (await browser.newContext()).newPage();
+    await page.route(/src\/game\.js/, async (route) => {
+      const res = await route.fetch(); let body = await res.text();
+      body = body.replace("render();\n      hideLoader(", "throw new Error('render boom');\n      hideLoader(");
+      route.fulfill({ response: res, body });
+    });
+    await page.goto(base);
+    await page.waitForSelector('#loadError:not([hidden])', { timeout: 6000 }).catch(() => {});
+    const shown = await page.locator('#loadError').isVisible();
+    await page.waitForTimeout(9000); // the 8s cutoff must not remove the error panel
+    check('a crash after the puzzle is chosen still shows the error panel (and keeps it)', shown && await page.locator('#loadError').isVisible());
+  }
+
   await browser.close();
   process.exit(bad ? 1 : 0);
 })();

@@ -3,9 +3,9 @@
 self.window = self; // data/words.js and generator.js attach to `window`
 importScripts('../data/words.js', 'generator.js');
 self.onmessage = (e) => {
-  const { id, difficulty, seed } = e.data;
+  const { id, difficulty, seed, maxMs } = e.data;
   try {
-    self.postMessage({ id, puzzle: self.WendGen.generate({ seed, difficulty, answers: self.WEND_ANSWERS }) });
+    self.postMessage({ id, puzzle: self.WendGen.generate({ seed, difficulty, answers: self.WEND_ANSWERS, maxMs }) });
   } catch (err) {
     self.postMessage({ id, error: String(err && err.message || err) });
   }

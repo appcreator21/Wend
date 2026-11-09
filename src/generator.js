@@ -231,7 +231,9 @@
     const total = diff.lengths.reduce((a, b) => a + b, 0);
     const n = diff.rows * diff.cols;
 
+    const started = Date.now();
     for (let attempt = 0; attempt < 20000; attempt++) {
+      if (opts.maxMs && Date.now() - started > opts.maxMs) throw new Error('puzzle generation timed out');
       const blocked = pickBlocked(diff.rows, diff.cols, n - total, rnd);
       if (blocked.size !== n - total) continue;
       const paths = partition(diff.rows, diff.cols, blocked, diff.lengths, rnd);

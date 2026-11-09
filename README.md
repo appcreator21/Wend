@@ -52,4 +52,5 @@ No framework: the site is static. `tools/build-site.sh` copies `index.html`, `sr
 ## Caching
 
 Every file is served with `Cache-Control: no-cache` plus an ETag (a matching revalidation is a tiny 304), so a phone can never run an old script
-against a new page. `index.html` also shows an error panel with a Reload button if the game fails to start or takes more than 12 seconds.
+against a new page. `index.html` also shows an error panel with a Reload button if anything fails while the loading screen is up, and removes the loader after 8 seconds if the game is running behind it.
+Add `?reset` to the address to clear saved settings and caches. Starting a puzzle never waits for the background worker (it only prepares the next one), and generation has a 4 second limit with a pre-checked board as the fallback.
