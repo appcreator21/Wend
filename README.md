@@ -18,7 +18,8 @@ No build step. Serve the folder and open `index.html`:
 - Add it to your home screen for a full-screen app (dark theme, content sits below the status bar).
 - Drag to trace; let go to place the word. A path that fits no slot stays selected (never auto-clears): keep dragging from its end, drag back to drop a letter, or tap the x / outside the board to clear.
   Dragging out from the last tile of a wrong word picks it back up so you can extend it; tapping a wrong word removes it. You can also tap tiles one by one and tap the last tile again to place.
-- Everything fits one screen with no scrolling (the board resizes to the available height). How to play is behind the `?` button; puzzle choice behind the gear.
+- The board takes all the room the rest of the screen leaves (no empty gap); on a very small phone it stops at a minimum size and the page scrolls a little. How to play is behind the `?` button; puzzle choice behind the gear.
+- Installed as an app the status bar is solid (content starts below it, so no iOS blur) and the page is true black to match.
 - On a win you get an image of the solved board (snakes and letters) to share or copy, instead of emoji.
 - Each board has one fixed set of answer words. Whatever you trace fills the slot with that many letters
   (a wrong word replaces the previous wrong one); only the correct word gets a green check, locks in and counts.
@@ -36,7 +37,7 @@ No build step. Serve the folder and open `index.html`:
 - `data/words.js` – pool of puzzle answers, built by `tools/build-words.js`
 - `tools/test-generator.js` – generator validity test (`node tools/test-generator.js`)
 - `tools/e2e.js` – Playwright test that solves each mode through the real UI
-- `tools/test-ux.js` – Playwright checks for natural dragging (resume, drag-back, pick-up) and that the layout fits one screen
+- `tools/test-ux.js` – Playwright checks for natural dragging (resume, drag-back, pick-up) and that the board fills the screen at 4 phone sizes x 4 modes
 
 ## Deploy (Cloudflare Pages)
 

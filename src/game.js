@@ -13,7 +13,7 @@
 
   const els = {
     board: $('board'), frame: $('frame'), slots: $('slots'), current: $('current'), toast: $('toast'), timer: $('timer'),
-    modes: $('modes'), undo: $('undoBtn'), undoIcon: $('undoIcon'), hint: $('hintBtn'), newBtn: $('newBtn'), results: $('resultsBtn'),
+    modes: $('modes'), undo: $('undoBtn'), hint: $('hintBtn'), newBtn: $('newBtn'), results: $('resultsBtn'),
     win: $('winDlg'), winStats: $('winStats'), winImg: $('winImg'), shareBtn: $('shareBtn'), copyBtn: $('copyBtn'), settings: $('settingsDlg'), helpDlg: $('helpDlg'),
     clearChip: $('clearChip'), progBar: $('progBar'), progText: $('progText'), loader: $('loader'), confetti: $('confetti'),
     sound: $('soundToggle'), haptic: $('hapticToggle'), nextBtn: $('nextBtn'),
@@ -151,7 +151,6 @@
       dragging = false; moved = false; tapWrong = null; pickup = null; solved = false; hints = 0; hintCell = -1; enterTile = -1; lastPt = null;
       startedAt = 0; elapsed = 0;
       slotWords = puzzle.lengths.map((len, k) => ({ len, color: SLOT_COLORS[k % COLORS], answer: puzzle.solution.find((x) => x.word.length === len).word, placed: null }));
-      $('app').style.setProperty('--slots-h', slotWords.length * 29 + 'px');
       els.newBtn.hidden = mode === 'daily';
       [...els.modes.querySelectorAll('button')].forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
       els.board.classList.remove('win');
@@ -247,7 +246,6 @@
     els.undo.hidden = solved;
     els.hint.hidden = solved;
     els.undo.disabled = !path.length && !placed.length;
-    els.undoIcon.disabled = solved || (!path.length && !placed.length);
     els.board.classList.toggle('win', solved);
 
     // Progress: one segment per word
@@ -637,9 +635,7 @@
     else if (placed.length) removeWord(placed[placed.length - 1]);
   };
   els.undo.addEventListener('click', undo);
-  els.undoIcon.addEventListener('click', undo);
   els.clearChip.addEventListener('click', clearPath);
-  $('backBtn').addEventListener('click', () => els.settings.showModal());
   els.hint.addEventListener('click', hint);
   els.results.addEventListener('click', () => els.win.showModal && els.win.showModal());
   els.newBtn.addEventListener('click', () => { els.settings.close(); start(); });

@@ -8,11 +8,11 @@
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1b1f23" media="(prefers-color-scheme: dark)">
-<!-- Installed web app (Add to Home Screen): full screen, content drawn under a see-through status bar -->
+<!-- Installed web app (Add to Home Screen): full screen with a solid status bar (content starts below it, so no blur) -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Wend">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -34,7 +34,7 @@
 <!-- Loading screen: four long words wind across a board one after another until every tile is used. -->
 <div id="loader" class="loader" role="status" aria-live="polite">
   <div class="loader-inner">
-    <div class="loader-title">Wend</div>
+    <div class="loader-title"><svg class="mark" viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="mk2" gradientUnits="userSpaceOnUse" x1="30" y1="30" x2="370" y2="370"><stop offset="0" stop-color="#ff4d7e"/><stop offset=".38" stop-color="#ffb020"/><stop offset=".7" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><polyline points="50,50 50,350 150,350 150,150 250,150 250,350 350,350 350,50" fill="none" stroke="url(#mk2)" stroke-width="74" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="50" r="17" fill="#fff" fill-opacity=".92"/></svg><span>Wend</span></div>
     <svg class="loader-board" viewBox="0 0 500 500" aria-hidden="true">
       <rect x="3" y="3" width="494" height="494" rx="26" class="lb-frame"/>
       <rect class="lb-blocked" x="203" y="3" width="94" height="94" rx="8"/>
@@ -109,19 +109,13 @@
 <main class="app" id="app">
   <header class="top">
     <div class="left">
-      <button id="backBtn" class="icon-btn" aria-label="Choose puzzle">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>
-      </button>
       <div class="timer-wrap" aria-label="Elapsed time">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         <span id="timer" class="timer">0:00</span>
       </div>
     </div>
-    <h1>Wend</h1>
+    <h1><svg class="mark" viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="mk1" gradientUnits="userSpaceOnUse" x1="30" y1="30" x2="370" y2="370"><stop offset="0" stop-color="#ff4d7e"/><stop offset=".38" stop-color="#ffb020"/><stop offset=".7" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><polyline points="50,50 50,350 150,350 150,150 250,150 250,350 350,350 350,50" fill="none" stroke="url(#mk1)" stroke-width="74" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="50" r="17" fill="#fff" fill-opacity=".92"/></svg><span>Wend</span></h1>
     <div class="right">
-      <button id="undoIcon" class="icon-btn muted" aria-label="Undo">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
-      </button>
       <button id="helpBtn" class="icon-btn" aria-label="How to play">
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9"/><path d="M12 17h.01"/></svg>
       </button>
@@ -136,10 +130,12 @@
     <span id="progText" class="prog-text"></span>
   </div>
 
-  <section class="frame" id="frame">
-    <svg id="board" class="board" role="group" aria-label="Letter grid"></svg>
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  </section>
+  <div class="board-area">
+    <section class="frame" id="frame">
+      <svg id="board" class="board" role="group" aria-label="Letter grid"></svg>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </section>
+  </div>
 
   <div class="current-row">
     <p id="current" class="current" aria-live="polite">Drag across tiles to spell a word</p>

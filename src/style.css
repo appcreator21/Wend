@@ -40,24 +40,29 @@
   --t4: color-mix(in srgb, var(--c4) 30%, var(--bg)); --t5: color-mix(in srgb, var(--c5) 30%, var(--bg)); --t6: color-mix(in srgb, var(--c6) 30%, var(--bg)); }
 
 * { box-sizing: border-box; }
-html { background: var(--bg); -webkit-text-size-adjust: 100%; overscroll-behavior: none; height: 100%; overflow: hidden; }
-body { height: 100%; overflow: hidden; margin: 0; background: var(--bg); color: var(--text); overscroll-behavior: none;
+html { background: var(--bg); -webkit-text-size-adjust: 100%; overscroll-behavior: none; }
+body { margin: 0; background: var(--bg); color: var(--text); overscroll-behavior: none;
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 button, .frame, .slots { touch-action: manipulation; }
 
 /* The safe-area inset keeps the header clear of the clock/notch when installed as an app. */
-.app { --chrome: 218px; max-width: 480px; height: 100vh; height: 100dvh; margin: 0 auto; background: var(--bg);
+.app { max-width: 480px; min-height: 100vh; min-height: 100dvh; margin: 0 auto; background: var(--bg);
   display: flex; flex-direction: column;
   padding: env(safe-area-inset-top) 16px calc(12px + env(safe-area-inset-bottom)); }
 .app > * { flex: none; }
+/* The board takes whatever height the rest of the screen leaves (never more than the width allows),
+   so there's no empty space and no guessing at the size of the other parts. On very small screens
+   it stops at a minimum size and the page scrolls instead. */
+.app > .board-area { flex: 1 1 0; min-height: 280px; display: flex; align-items: center; justify-content: center; }
 
 /* Header. The title is centred with flexbox (no transform), so text stays pixel-sharp. */
 .top { position: relative; display: flex; align-items: center; justify-content: space-between; height: 56px; margin-bottom: 4px; }
 .top .left, .top .right { display: flex; align-items: center; gap: 4px; position: relative; z-index: 1; }
 .top .right { gap: 0; }
-h1 { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+h1 { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; pointer-events: none;
   font-size: 28px; font-weight: 800; letter-spacing: -0.01em; }
+.mark { width: 26px; height: 26px; flex: none; }
 .timer-wrap { display: flex; align-items: center; gap: 6px; margin-left: 2px; color: var(--text); }
 .timer { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .icon-btn { width: 44px; height: 44px; border: 0; background: transparent; color: var(--text); cursor: pointer; display: grid; place-items: center; border-radius: 50%; padding: 0; transition: transform .1s, opacity .15s; }
@@ -74,10 +79,11 @@ h1 { position: absolute; inset: 0; margin: 0; display: flex; align-items: center
 .prog-bar i.on { transform: scaleY(1.35); }
 .prog-text { font-size: 13px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 
-.frame { position: relative; padding: 3px; background: var(--frame); border-radius: 12px; touch-action: none; cursor: pointer;
-  width: min(100%, calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--chrome) - var(--slots-h, 100px)));
-  width: min(100%, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--chrome) - var(--slots-h, 100px)));
-  margin: 0 auto; }
+.frame { position: relative; padding: 3px; background: var(--frame); border-radius: 12px; touch-action: none; cursor: pointer; width: min(100%, 62vh); }
+@supports (width: 1cqw) {
+  .board-area { container-type: size; }
+  .frame { width: min(100cqw, 100cqh); }
+}
 .board { display: block; width: 100%; height: auto; border-radius: 9px; overflow: hidden; user-select: none; -webkit-user-select: none; background: var(--frame); }
 .board > *:not(.tile), .board text, .board g { pointer-events: none; }
 .board .tile { stroke: var(--grid); stroke-width: 1; transition: fill .2s; }
@@ -135,7 +141,7 @@ h1 { position: absolute; inset: 0; margin: 0; display: flex; align-items: center
 @keyframes target { 50% { box-shadow: 0 0 0 2px var(--sc); } }
 @keyframes drop { from { transform: translateY(-10px) scale(.5); opacity: 0; } }
 
-.actions { display: flex; gap: 8px; margin-top: auto; padding-top: 10px; }
+.actions { display: flex; gap: 8px; padding-top: 10px; }
 .pill { flex: 1; height: 40px; border-radius: 999px; border: 0; background: var(--pill); color: var(--text); font: inherit; font-weight: 700; font-size: 16px; cursor: pointer; padding: 0; transition: transform .1s, opacity .15s; }
 .pill:active:not(:disabled) { transform: scale(.97); }
 .pill:disabled { cursor: default; color: var(--pill-text); opacity: .75; }
@@ -176,7 +182,8 @@ dialog h2 { margin-top: 0; }
 .loader.hide * { animation-play-state: paused !important; }
 .loader[hidden] { display: none; }
 .loader-inner { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 24px; }
-.loader-title { font-size: 34px; font-weight: 800; letter-spacing: -0.01em; }
+.loader-title { display: flex; align-items: center; gap: 12px; font-size: 34px; font-weight: 800; letter-spacing: -0.01em; }
+.loader-title .mark { width: 34px; height: 34px; }
 .loader-board { width: min(58vw, 240px); height: auto; filter: drop-shadow(0 8px 24px rgba(0, 0, 0, .18)); }
 .lb-frame { fill: var(--cell); stroke: var(--frame); stroke-width: 6; }
 .lb-tint { opacity: 0; }
@@ -237,3 +244,6 @@ dialog form button.primary { background: var(--accent); color: var(--accent-text
 
 /* display rules above must not defeat the hidden attribute */
 .clear-chip[hidden], .pill[hidden], .slot[hidden] { display: none; }
+
+/* Installed app: the status bar is solid black, so the page is too (seamless, and easy on OLED). */
+:root.standalone { --bg: #000; --surface: #14171a; --cell: #14181c; --pill: #2a2e33; --grid: rgba(255, 255, 255, .07); }

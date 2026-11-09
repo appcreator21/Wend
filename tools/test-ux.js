@@ -8,7 +8,7 @@ const check = (name, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + name
 (async () => {
   const browser = await chromium.launch();
 
-  // ---- fits on one screen, no scrolling, at several phone sizes, in every mode ----
+  // ---- the board fills the free space (scrolling only if a tiny screen can't fit it), at several phone sizes, in every mode ----
   for (const [w, h] of [[390, 844], [375, 667], [430, 932], [360, 640]]) {
     const ctx = await browser.newContext({ viewport: { width: w, height: h } });
     const page = await ctx.newPage();
@@ -19,9 +19,13 @@ const check = (name, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + name
       await page.waitForSelector('#loader', { state: 'hidden' });
       const m = await page.evaluate(() => {
         const r = (s) => document.querySelector(s).getBoundingClientRect();
-        return { scroll: document.documentElement.scrollHeight, inner: innerHeight, actions: r('.actions').bottom, board: r('#frame').width, boardRight: r('#frame').right, w: innerWidth };
+        return { scroll: document.documentElement.scrollHeight, inner: innerHeight, actions: r('.actions').bottom + scrollY, board: r('#frame').width, boardRight: r('#frame').right, w: innerWidth };
       });
-      check(`fits ${w}x${h} ${mode}`, m.scroll <= m.inner + 1 && m.actions <= m.inner + 1 && m.boardRight <= m.w, `(board ${Math.round(m.board)}px, bottom ${Math.round(m.actions)}/${m.inner})`);
+      // The board must use the free space: either it's as wide as the screen allows, or it's the minimum size and the page scrolls.
+      const maxBoard = m.w - 32, scrolls = m.scroll > m.inner + 1;
+      const gap = m.inner - m.actions; // empty space under the buttons when nothing scrolls
+      const ok = m.boardRight <= m.w && m.board >= 270 && (scrolls ? m.board <= 300 : (m.board >= maxBoard - 1 || gap <= 20));
+      check(`board fills the screen ${w}x${h} ${mode}`, ok, `(board ${Math.round(m.board)}px of ${Math.round(maxBoard)}, ${scrolls ? 'scrolls by ' + (m.scroll - m.inner) + 'px' : 'empty space under buttons ' + Math.round(gap) + 'px'})`);
     }
     await ctx.close();
   }
