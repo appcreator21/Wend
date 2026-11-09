@@ -1,7 +1,8 @@
 (function () {
   'use strict';
   const { generate, neighbours } = window.WendGen;
-  const $ = (id) => document.getElementById(id);
+  // A missing element gets a harmless stand-in, so an older/newer page can never make the script throw at startup.
+  const $ = (id) => document.getElementById(id) || document.createElement('div');
   const DAILY_BY_WEEKDAY = ['expert', 'easy', 'easy', 'medium', 'medium', 'hard', 'hard']; // Sun..Sat
   const MODES = ['daily', 'easy', 'medium', 'hard', 'expert'];
   const NAMES = { daily: 'Daily', easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' };

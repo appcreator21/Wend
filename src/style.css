@@ -62,7 +62,6 @@ button, .frame, .slots { touch-action: manipulation; }
 .top .right { gap: 0; }
 h1 { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; pointer-events: none;
   font-size: 28px; font-weight: 800; letter-spacing: -0.01em; }
-.mark { width: 26px; height: 26px; flex: none; }
 .timer-wrap { display: flex; align-items: center; gap: 6px; margin-left: 2px; color: var(--text); }
 .timer { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .icon-btn { width: 44px; height: 44px; border: 0; background: transparent; color: var(--text); cursor: pointer; display: grid; place-items: center; border-radius: 50%; padding: 0; transition: transform .1s, opacity .15s; }
@@ -183,7 +182,6 @@ dialog h2 { margin-top: 0; }
 .loader[hidden] { display: none; }
 .loader-inner { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 24px; }
 .loader-title { display: flex; align-items: center; gap: 12px; font-size: 34px; font-weight: 800; letter-spacing: -0.01em; }
-.loader-title .mark { width: 34px; height: 34px; }
 .loader-board { width: min(58vw, 240px); height: auto; filter: drop-shadow(0 8px 24px rgba(0, 0, 0, .18)); }
 .lb-frame { fill: var(--cell); stroke: var(--frame); stroke-width: 6; }
 .lb-tint { opacity: 0; }
@@ -247,3 +245,10 @@ dialog form button.primary { background: var(--accent); color: var(--accent-text
 
 /* Installed app: the status bar is solid black, so the page is too (seamless, and easy on OLED). */
 :root.standalone { --bg: #000; --surface: #14171a; --cell: #14181c; --pill: #2a2e33; --grid: rgba(255, 255, 255, .07); }
+
+/* Shown on the loading screen if the game fails to start */
+.load-error { text-align: center; }
+.load-error[hidden] { display: none; }
+.load-error p { margin: 0 0 10px; font-weight: 700; }
+.load-error button { min-height: 44px; padding: 0 28px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-text); font: inherit; font-weight: 700; cursor: pointer; }
+.load-error small { display: block; margin-top: 10px; color: var(--muted); font-size: 12px; word-break: break-word; }

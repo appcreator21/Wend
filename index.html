@@ -28,13 +28,29 @@
     document.documentElement.classList.add('standalone', 'dark');
   }
 </script>
+<script>
+  // If the game fails to start (or is slow), say so instead of showing the loading animation forever.
+  (function () {
+    function started() { return window.__wend && window.__wend.puzzle; }
+    function fail(msg) {
+      if (started()) return;
+      var box = document.getElementById('loadError'), note = document.getElementById('loadErrorNote');
+      if (!box) return;
+      box.hidden = false;
+      if (note && msg) note.textContent = String(msg).slice(0, 160);
+    }
+    window.addEventListener('error', function (e) { fail(e && e.message); });
+    window.addEventListener('unhandledrejection', function (e) { fail(e && e.reason && (e.reason.message || e.reason)); });
+    setTimeout(function () { fail('Taking longer than expected'); }, 12000);
+  })();
+</script>
 </head>
 <body>
 
 <!-- Loading screen: four long words wind across a board one after another until every tile is used. -->
 <div id="loader" class="loader" role="status" aria-live="polite">
   <div class="loader-inner">
-    <div class="loader-title"><svg class="mark" viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="mk2" gradientUnits="userSpaceOnUse" x1="30" y1="30" x2="370" y2="370"><stop offset="0" stop-color="#ff4d7e"/><stop offset=".38" stop-color="#ffb020"/><stop offset=".7" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><polyline points="50,50 50,350 150,350 150,150 250,150 250,350 350,350 350,50" fill="none" stroke="url(#mk2)" stroke-width="74" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="50" r="17" fill="#fff" fill-opacity=".92"/></svg><span>Wend</span></div>
+    <div class="loader-title">Wend</div>
     <svg class="loader-board" viewBox="0 0 500 500" aria-hidden="true">
       <rect x="3" y="3" width="494" height="494" rx="26" class="lb-frame"/>
       <rect class="lb-blocked" x="203" y="3" width="94" height="94" rx="8"/>
@@ -97,6 +113,11 @@
         <text x="450" y="352">R</text>
       </g>
     </svg>
+    <div id="loadError" class="load-error" hidden>
+      <p>Wend didn&rsquo;t load properly.</p>
+      <button onclick="location.reload()">Reload</button>
+      <small id="loadErrorNote"></small>
+    </div>
     <div class="loader-tag" aria-hidden="true">
       <span>Wending your words&hellip;</span>
       <span>Hiding the decoys&hellip;</span>
@@ -114,7 +135,7 @@
         <span id="timer" class="timer">0:00</span>
       </div>
     </div>
-    <h1><svg class="mark" viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="mk1" gradientUnits="userSpaceOnUse" x1="30" y1="30" x2="370" y2="370"><stop offset="0" stop-color="#ff4d7e"/><stop offset=".38" stop-color="#ffb020"/><stop offset=".7" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><polyline points="50,50 50,350 150,350 150,150 250,150 250,350 350,350 350,50" fill="none" stroke="url(#mk1)" stroke-width="74" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="50" r="17" fill="#fff" fill-opacity=".92"/></svg><span>Wend</span></h1>
+    <h1>Wend</h1>
     <div class="right">
       <button id="helpBtn" class="icon-btn" aria-label="How to play">
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9"/><path d="M12 17h.01"/></svg>

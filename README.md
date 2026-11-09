@@ -37,6 +37,7 @@ No build step. Serve the folder and open `index.html`:
 - `data/words.js` – pool of puzzle answers, built by `tools/build-words.js`
 - `tools/test-generator.js` – generator validity test (`node tools/test-generator.js`)
 - `tools/e2e.js` – Playwright test that solves each mode through the real UI
+- `tools/test-resilience.js` – the loading screen can never hang: page/script version skew and a crashing script end in a working game or a visible error with a Reload button
 - `tools/test-ux.js` – Playwright checks for natural dragging (resume, drag-back, pick-up) and that the board fills the screen at 4 phone sizes x 4 modes
 
 ## Deploy (Cloudflare Pages)
@@ -47,3 +48,8 @@ No framework: the site is static. `tools/build-site.sh` copies `index.html`, `sr
 - **CLI:** `sh tools/build-site.sh && npx wrangler pages deploy dist --project-name wend` (needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`).
 - **API only (no asset upload token):** `node tools/make-worker.js`, then POST `worker/_worker.js` as the `_worker.js` part (with `manifest={}`) to
   `/accounts/<id>/pages/projects/wend/deployments`. The worker serves every file from memory (~90KB), which is how the current site is deployed.
+
+## Caching
+
+Every file is served with `Cache-Control: no-cache` plus an ETag (a matching revalidation is a tiny 304), so a phone can never run an old script
+against a new page. `index.html` also shows an error panel with a Reload button if the game fails to start or takes more than 12 seconds.
