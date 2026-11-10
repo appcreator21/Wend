@@ -30,6 +30,24 @@ const check = (name, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + name
     await ctx.close();
   }
 
+  // ---- the timer starts on its own as soon as the board is shown (no touching needed) ----
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.goto(base); await page.waitForSelector('#loader', { state: 'hidden' });
+    await page.waitForTimeout(2300);
+    const t = await page.locator('#timer').textContent();
+    check('timer runs without any interaction', t !== '0:00', JSON.stringify(t));
+    // choosing another level starts a fresh clock by itself too
+    await page.click('#settingsBtn'); await page.click('#modes [data-mode="hard"]');
+    await page.waitForSelector('#loader', { state: 'hidden' });
+    const justAfter = await page.locator('#timer').textContent();
+    await page.waitForTimeout(2300);
+    const later = await page.locator('#timer').textContent();
+    check('switching level restarts the timer and it runs without interaction', justAfter === '0:00' && later !== '0:00', justAfter + ' -> ' + later);
+    await ctx.close();
+  }
+
   // ---- natural dragging ----
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();

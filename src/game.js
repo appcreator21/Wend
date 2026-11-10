@@ -168,7 +168,10 @@
       els.board.setAttribute('viewBox', '0 0 ' + puzzle.cols * CELL + ' ' + puzzle.rows * CELL);
       els.timer.textContent = '0:00';
       render();
-      hideLoader(Math.max(0, (first ? 2600 : 1300) - (Date.now() - t0)));
+      const revealIn = Math.max(0, (first ? 2600 : 1300) - (Date.now() - t0));
+      hideLoader(revealIn);
+      // The clock starts the moment the board is revealed, not on your first touch (no free time to study it).
+      setTimeout(() => { if (token === startToken) ensureTimer(); }, FAST ? 0 : revealIn);
       // Get the next puzzle ready in the background (the one you'll most likely play next).
       prefetch(mode === 'daily' ? store.get('wend.practice', 'hard') : mode);
     }).catch((err) => {
