@@ -15,7 +15,7 @@
   const TARGET_WINS = 3;   // first to this many rounds wins the duel
   const CELL = 100;
   const NAMES = { easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' };
-  const HEX = ['#ff6b6b', '#4ecdc4', '#ffd166', '#a78bfa', '#6ee7a0', '#ff9f5a', '#5fb4ff'];
+  const HEX = ['#ff453a', '#64d2ff', '#ffd60a', '#bf5af2', '#32d74b', '#ff9f0a', '#5e8bff'];
   const fmt = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   const params = new URLSearchParams(location.search);
   const ENV = params.get('env') || 'web';   // 'messages' (the iMessage extension), 'app' (the home-screen app) or 'web'
@@ -318,14 +318,14 @@
     try {
       const W = 900, H = 600, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
       const ctx = cv.getContext('2d');
-      const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#1b2050'); g.addColorStop(1, '#0f1226');
+      const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#1c2250'); g.addColorStop(1, '#08080d');
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
       const rr = (x, y, w, h, r) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); ctx.fill(); };
       const font = (w, s) => w + ' ' + s + 'px -apple-system, system-ui, sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       if (P.over) {
-        ctx.fillStyle = '#9499c4'; ctx.font = font(700, 54); ctx.fillText('DUEL OVER', W / 2, 170);
-        ctx.fillStyle = '#ffd166'; ctx.font = font(800, 220); ctx.fillText(Math.max(P.s[0], P.s[1]) + '–' + Math.min(P.s[0], P.s[1]), W / 2, 350);
+        ctx.fillStyle = '#8e8e93'; ctx.font = font(700, 54); ctx.fillText('DUEL OVER', W / 2, 170);
+        ctx.fillStyle = '#ffd60a'; ctx.font = font(800, 220); ctx.fillText(Math.max(P.s[0], P.s[1]) + '–' + Math.min(P.s[0], P.s[1]), W / 2, 350);
       } else {
         const p = P.puzzle, size = 440, cell = size / Math.max(p.rows, p.cols), ox = 60, oy = (H - cell * p.rows) / 2;
         p.letters.forEach((ch, i) => {
@@ -335,10 +335,10 @@
         });
         ctx.globalAlpha = 1;
         const tx = 60 + size + (W - size - 60) / 2;
-        ctx.fillStyle = '#9499c4'; ctx.font = font(700, 46); ctx.fillText('ROUND ' + P.rd, tx, 170);
-        ctx.fillStyle = '#eef0ff'; ctx.font = font(600, 50); ctx.fillText('Beat', tx, 260);
-        ctx.fillStyle = '#ffd166'; ctx.font = font(800, 130); ctx.fillText(fmt(P.t), tx, 360);
-        ctx.fillStyle = '#9499c4'; ctx.font = font(600, 40); ctx.fillText(NAMES[p.difficulty], tx, 460);
+        ctx.fillStyle = '#8e8e93'; ctx.font = font(700, 46); ctx.fillText('ROUND ' + P.rd, tx, 170);
+        ctx.fillStyle = '#ffffff'; ctx.font = font(600, 50); ctx.fillText('Beat', tx, 260);
+        ctx.fillStyle = '#ffd60a'; ctx.font = font(800, 130); ctx.fillText(fmt(P.t), tx, 360);
+        ctx.fillStyle = '#8e8e93'; ctx.font = font(600, 40); ctx.fillText(NAMES[p.difficulty], tx, 460);
       }
       return cv.toDataURL('image/jpeg', 0.85);
     } catch (e) { return null; }

@@ -13,7 +13,12 @@ protocol GameHostDelegate: AnyObject {
 
 @MainActor
 final class GameHost: NSObject, WKScriptMessageHandler {
-    static let background = UIColor(red: 15 / 255, green: 18 / 255, blue: 38 / 255, alpha: 1)
+    /// Matches --bg in coil.css, so there is no flash before the page paints and light/dark follow the system.
+    static let background = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 8 / 255, green: 8 / 255, blue: 13 / 255, alpha: 1)
+            : UIColor(red: 242 / 255, green: 242 / 255, blue: 247 / 255, alpha: 1)
+    }
 
     let webView: WKWebView
     weak var delegate: GameHostDelegate?
