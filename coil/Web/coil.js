@@ -664,7 +664,7 @@
   els.clear.addEventListener('click', () => { if (game && !game.solved && game.path.length) { game.path = []; game.hintCell = -1; render(); } });
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-  // Test hook (imessage/tools/test-duel.js)
+  // Test hook (coil/tools/test-duel.js)
   window.__coil = { get game() { return game; }, get screen() { return S.screen; }, get duel() { return duel; }, unpack };
 
   setStyle(params.get('style') || 'expanded');

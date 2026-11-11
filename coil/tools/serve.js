@@ -1,9 +1,9 @@
 // Serves the game the way the app bundle does: every file flat in one folder.
-//   node imessage/tools/serve.js [port]   ->  http://localhost:8200/index.html
+//   node coil/tools/serve.js [port]   ->  http://localhost:8200/index.html
 const http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..', '..');
 const FILES = {
-  'index.html': 'imessage/Web/index.html', 'coil.css': 'imessage/Web/coil.css', 'coil.js': 'imessage/Web/coil.js',
+  'index.html': 'coil/Web/index.html', 'coil.css': 'coil/Web/coil.css', 'coil.js': 'coil/Web/coil.js',
   'generator.js': 'src/generator.js', 'words.js': 'data/words.js', 'puzzles.js': 'data/puzzles.js',
 };
 const TYPES = { html: 'text/html', css: 'text/css', js: 'text/javascript' };

@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # Regenerates Coil.xcodeproj. Only needed after adding or removing files; the project is committed.
-#   gem install xcodeproj && ruby imessage/tools/make-xcodeproj.rb
+#   gem install xcodeproj && ruby coil/tools/make-xcodeproj.rb
 require 'xcodeproj'
 require 'fileutils'
 

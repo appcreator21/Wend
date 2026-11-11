@@ -1,5 +1,5 @@
 // Renders the app icon and the iMessage icon set. Run after changing the artwork below:
-//   NODE_PATH=$(npm root -g) node imessage/tools/make-icons.js && python3 imessage/tools/resize-icons.py
+//   NODE_PATH=$(npm root -g) node coil/tools/make-icons.js && python3 coil/tools/resize-icons.py
 const { chromium } = require('playwright');
 const path = require('path');
 const art = (w, h) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${(1024 - w) / 2} ${(1024 - h) / 2} ${w} ${h}">

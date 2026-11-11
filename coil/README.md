@@ -16,8 +16,8 @@ that has been played cannot be replayed for a better time.
 
 You need a Mac with Xcode 15 or newer and your Apple Developer account.
 
-1. Open `imessage/Config.xcconfig` and set `APP_BUNDLE_ID` to an id of your own (for example `com.yourname.coil`).
-2. Open `imessage/Coil.xcodeproj`. For **both** targets (`Coil` and `CoilMessages`) go to
+1. Open `coil/Config.xcconfig` and set `APP_BUNDLE_ID` to an id of your own (for example `com.yourname.coil`).
+2. Open `coil/Coil.xcodeproj`. For **both** targets (`Coil` and `CoilMessages`) go to
    *Signing & Capabilities* and choose your team. (Or put the Team ID in `Config.xcconfig` once.)
 3. Plug in your iPhone, select it as the run destination and press Run. Coil appears on the home screen
    (solo practice) and in the Messages apps row (duels).
@@ -45,7 +45,7 @@ TestFlight builds expire after 90 days; archive and upload again (bump `CURRENT_
 | `Shared/GameHost.swift` | The web view, a `coil://` handler that serves the bundled files, and the JSON bridge. |
 | `MessagesExtension/` | `MSMessagesAppViewController`: hands a tapped message to the page, turns a finished turn into an `MSMessage`. |
 | `App/` | The small home-screen app every iMessage app ships inside (solo practice). |
-| `tools/serve.js` | Runs the game in a desktop browser: `node imessage/tools/serve.js`. |
+| `tools/serve.js` | Runs the game in a desktop browser: `node coil/tools/serve.js`. |
 | `tools/test-duel.js` | Plays a whole duel between two simulated phones. |
 | `tools/make-xcodeproj.rb` | Regenerates the Xcode project after files are added or removed. |
 | `tools/make-icons.js`, `tools/resize-icons.py` | Rebuild the icon sets. |

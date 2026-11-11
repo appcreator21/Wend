@@ -1,5 +1,5 @@
 // Plays a whole duel between two simulated phones, handing each "send" to the other side the way Messages does.
-//   NODE_PATH=$(npm root -g) node imessage/tools/test-duel.js
+//   NODE_PATH=$(npm root -g) node coil/tools/test-duel.js
 const { chromium } = require('playwright');
 const server = require('./serve.js');
 let bad = 0;

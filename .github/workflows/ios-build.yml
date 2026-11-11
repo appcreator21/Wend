@@ -4,7 +4,7 @@ name: iOS build
 on:
   push:
     paths:
-      - 'imessage/**'
+      - 'coil/**'
       - 'src/generator.js'
       - 'data/**'
       - '.github/workflows/ios-build.yml'
@@ -20,12 +20,12 @@ jobs:
         run: xcodebuild -version
       - name: Build for the simulator
         run: |
-          xcodebuild -project imessage/Coil.xcodeproj -scheme Coil -configuration Debug \
+          xcodebuild -project coil/Coil.xcodeproj -scheme Coil -configuration Debug \
             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build | tail -40
           exit ${PIPESTATUS[0]}
       - name: Build for iPhone (release, unsigned)
         run: |
-          xcodebuild -project imessage/Coil.xcodeproj -scheme Coil -configuration Release \
+          xcodebuild -project coil/Coil.xcodeproj -scheme Coil -configuration Release \
             -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build | tail -40
           exit ${PIPESTATUS[0]}
       - name: Check the bundles
