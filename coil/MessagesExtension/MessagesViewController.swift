@@ -13,7 +13,7 @@ final class MessagesViewController: MSMessagesAppViewController, GameHostDelegat
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        host.attach(to: view)
+        host.attach(to: view, anchored: true)
         // Dragging a word down the board must not read as pulling the sheet closed: claim every touch the
         // moment it lands, so the game owns the drag. The sheet is still closed from its top bar.
         let claim = TouchClaimGesture()
