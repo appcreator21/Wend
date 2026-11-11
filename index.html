@@ -6,6 +6,11 @@
 <title>Wend</title>
 <meta name="description" content="A daily word-path puzzle. Trace words through the grid so every tile is used exactly once.">
 <meta name="color-scheme" content="dark light">
+<meta property="og:site_name" content="Wend">
+<meta property="og:title" content="Wend">
+<meta property="og:description" content="A daily word-path puzzle. Use every tile exactly once.">
+<meta property="og:image" content="https://wend-92k.pages.dev/icons/icon-512.png">
+<meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1b1f23" media="(prefers-color-scheme: dark)">
 <!-- Installed web app (Add to Home Screen): full screen with a solid status bar (content starts below it, so no blur) -->
@@ -228,15 +233,36 @@
 </dialog>
 
 <dialog id="winDlg">
-  <h2>Solved!</h2>
-  <img id="winImg" class="win-img" alt="Your solved puzzle">
+  <h2 id="winTitle">Solved!</h2>
+  <div id="winVerdict" class="verdict" hidden></div>
   <p id="winStats"></p>
-  <div class="dlg-stack">
-    <button id="nextBtn" class="primary">Next puzzle</button>
+
+  <div class="seg" role="tablist" aria-label="What to share">
+    <button id="segLink" class="on" role="tab" aria-selected="true">Challenge link</button>
+    <button id="segImg" role="tab" aria-selected="false">Results image</button>
+  </div>
+
+  <div id="paneLink">
+    <p id="linkHelp" class="fine"></p>
+    <input id="nameInput" class="field" type="text" maxlength="20" placeholder="Your name (shown to your opponent)" autocomplete="off">
+    <input id="linkInput" class="field mono" type="text" readonly>
+    <div class="dlg-actions">
+      <button id="shareLinkBtn" class="primary">Share link</button>
+      <button id="copyLinkBtn">Copy link</button>
+    </div>
+  </div>
+
+  <div id="paneImg" hidden>
+    <img id="winImg" class="win-img" alt="Your solved puzzle">
     <div class="dlg-actions">
       <button id="shareBtn">Share image</button>
       <button id="copyBtn">Copy image</button>
     </div>
+  </div>
+
+  <div class="dlg-stack">
+    <button id="retryBtn" hidden>Try this puzzle again</button>
+    <button id="nextBtn" class="primary">Next puzzle</button>
     <form method="dialog"><button class="plain">Close</button></form>
   </div>
 </dialog>

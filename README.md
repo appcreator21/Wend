@@ -20,7 +20,10 @@ No build step. Serve the folder and open `index.html`:
   Dragging out from the last tile of a wrong word picks it back up so you can extend it; tapping a wrong word removes it. You can also tap tiles one by one and tap the last tile again to place.
 - The board is always the full width of the screen; if the rest doesn't fit underneath on a small phone, the page scrolls. How to play is behind the `?` button; puzzle choice behind the gear.
 - Installed as an app the status bar is solid (content starts below it, so no iOS blur) and the page is true black to match.
-- On a win you get an image of the solved board (snakes and letters) to share or copy, instead of emoji.
+- On a win you can share a **challenge link** (the default) or a results image, switched with a toggle in the result dialog.
+  The link carries the exact puzzle (letters + the path of every answer word, so it keeps working whatever changes later), your time and your name.
+  Whoever opens it plays that same puzzle against your time: the clock turns red once they pass it, and when they finish they're told whether they won, lost or tied (and by how much).
+  Hints add 15 seconds. A short checksum rejects damaged or hand-edited links (friendly-rivalry protection, not tamper-proof). The server also gives challenge links their own preview text ("beat 3:12").
 - Each board has one fixed set of answer words. Whatever you trace fills the slot with that many letters
   (a wrong word replaces the previous wrong one); only the correct word gets a green check, locks in and counts.
   The puzzle is solved when every slot is correct.
@@ -38,6 +41,7 @@ No build step. Serve the folder and open `index.html`:
 - `tools/test-generator.js` – generator validity test (`node tools/test-generator.js`)
 - `tools/e2e.js` – Playwright test that solves each mode through the real UI
 - `tools/test-resilience.js` – the loading screen can never hang: page/script version skew and a crashing script end in a working game or a visible error with a Reload button
+- `tools/test-challenge.js` – the challenge flow: link toggle, same puzzle on the other side, win/lose verdicts, red clock, rematch, tampered link
 - `tools/test-ux.js` – Playwright checks for natural dragging (resume, drag-back, pick-up) and that the board is full width at 4 phone sizes x 4 modes
 
 ## Deploy (Cloudflare Pages)

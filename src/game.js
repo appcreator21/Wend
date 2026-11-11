@@ -5,7 +5,10 @@
   const $ = (id) => document.getElementById(id) || document.createElement('div');
   const DAILY_BY_WEEKDAY = ['expert', 'easy', 'easy', 'medium', 'medium', 'hard', 'hard']; // Sun..Sat
   const MODES = ['daily', 'easy', 'medium', 'hard', 'expert'];
-  const NAMES = { daily: 'Daily', easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' };
+  const NAMES = { daily: 'Daily', easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert', challenge: 'Challenge' };
+  const PENALTY = 15; // seconds added to your time for each hint used
+  const fmt = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  const span = (s) => (s < 60 ? s + 's' : Math.floor(s / 60) + 'm ' + (s % 60) + 's'); // a gap between two times
   const COLORS = 7;
   // Each slot (word length) keeps its own colour, in the same order as the original: pink, indigo, green, purple, cyan, orange.
   const SLOT_COLORS = [4, 5, 3, 2, 0, 1, 6];
@@ -15,12 +18,14 @@
   const els = {
     board: $('board'), frame: $('frame'), slots: $('slots'), current: $('current'), toast: $('toast'), timer: $('timer'),
     modes: $('modes'), undo: $('undoBtn'), hint: $('hintBtn'), newBtn: $('newBtn'), results: $('resultsBtn'),
-    win: $('winDlg'), winStats: $('winStats'), winImg: $('winImg'), shareBtn: $('shareBtn'), copyBtn: $('copyBtn'), settings: $('settingsDlg'), helpDlg: $('helpDlg'),
+    win: $('winDlg'), winStats: $('winStats'), winImg: $('winImg'), winTitle: $('winTitle'), winVerdict: $('winVerdict'),
+    segLink: $('segLink'), segImg: $('segImg'), paneLink: $('paneLink'), paneImg: $('paneImg'), linkHelp: $('linkHelp'), nameInput: $('nameInput'),
+    linkInput: $('linkInput'), shareLinkBtn: $('shareLinkBtn'), copyLinkBtn: $('copyLinkBtn'), retryBtn: $('retryBtn'), shareBtn: $('shareBtn'), copyBtn: $('copyBtn'), settings: $('settingsDlg'), helpDlg: $('helpDlg'),
     clearChip: $('clearChip'), progBar: $('progBar'), progText: $('progText'), loader: $('loader'), confetti: $('confetti'),
     sound: $('soundToggle'), haptic: $('hapticToggle'), nextBtn: $('nextBtn'),
   };
 
-  let mode = 'daily', startToken = 0;
+  let mode = 'daily', startToken = 0, challenge = null, winEff = 0;
   let puzzle, placed, slotWords, path, dragging, moved, tapWrong, pickup, shareBlob, lastPt, enterTile, startedAt, elapsed, timerId, solved, hints, hintCell, practiceN = 0;
 
   // ---------- persistence (all optional) ----------
@@ -59,6 +64,56 @@
     wrong: () => { tone(170, 0.16, 'sawtooth', 0.04); tone(140, 0.2, 'sawtooth', 0.035, 0.08); },
     win: () => { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, k) => tone(f, 0.22, 'sine', 0.07, k * 0.09)); },
   };
+
+  // ---------- challenge links ----------
+  // A challenge link carries the exact puzzle (letters + the path of every answer word, so it keeps working
+  // whatever changes later) plus the sender's time, hints and name. A short checksum catches casual edits
+  // and damaged links; it is not tamper-proof, which is fine for a friendly rivalry.
+  const b64e = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const b64d = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+  const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+  const playerName = () => String(store.get('wend.name', '') || '').trim().slice(0, 20);
+
+  function packChallenge(seconds) {
+    const body = {
+      v: 1, d: puzzle.difficulty, r: puzzle.rows, c: puzzle.cols, l: puzzle.letters.map((x) => x || '_').join(''),
+      p: puzzle.solution.map((s) => s.path.join('.')), t: seconds, h: hints, n: playerName(),
+    };
+    return b64e(JSON.stringify(Object.assign({}, body, { k: hash(JSON.stringify(body) + '|wend') })));
+  }
+  const challengeUrl = (seconds) => location.origin + location.pathname + '?c=' + packChallenge(seconds);
+
+  // Returns { name, time, hints, difficulty, puzzle } for a valid link, { bad } for a damaged one, null if there is none.
+  function parseChallenge(search) {
+    const m = /[?&]c=([^&]+)/.exec(search || '');
+    if (!m) return null;
+    const bad = { bad: 'That challenge link looks damaged — starting a normal game.' };
+    try {
+      const o = JSON.parse(b64d(decodeURIComponent(m[1])));
+      const k = o.k; delete o.k;
+      if (hash(JSON.stringify(o) + '|wend') !== k) return bad;
+      const { r, c, l, p } = o;
+      if (!(r >= 3 && r <= 12 && c >= 3 && c <= 12) || typeof l !== 'string' || l.length !== r * c || !/^[A-Z_]+$/.test(l) || !Array.isArray(p) || p.length < 2 || p.length > 12) return bad;
+      const seen = new Set(), lens = new Set(), solution = [];
+      for (const ps of p) {
+        const cells = String(ps).split('.').map(Number);
+        if (cells.length < 4 || cells.some((x) => !Number.isInteger(x) || x < 0 || x >= r * c || l[x] === '_' || seen.has(x))) return bad;
+        for (let i = 1; i < cells.length; i++) if (!neighbours(cells[i - 1], r, c).includes(cells[i])) return bad;
+        cells.forEach((x) => seen.add(x));
+        if (lens.has(cells.length)) return bad;
+        lens.add(cells.length);
+        solution.push({ word: cells.map((x) => l[x]).join(''), path: cells });
+      }
+      if (seen.size !== l.split('').filter((x) => x !== '_').length) return bad;
+      const t = Number(o.t);
+      if (!(t >= 0 && t < 86400)) return bad;
+      const letters = l.split('').map((x) => (x === '_' ? null : x));
+      return {
+        name: String(o.n || '').trim().slice(0, 20) || 'A friend', time: Math.floor(t), hints: Number(o.h) | 0, difficulty: String(o.d || 'hard'),
+        puzzle: { rows: r, cols: c, letters, blocked: letters.map((x, i) => (x ? -1 : i)).filter((i) => i >= 0), lengths: [...lens].sort((a, b) => a - b), solution },
+      };
+    } catch (e) { return bad; }
+  }
 
   // ---------- puzzle source ----------
   // Puzzles are pregenerated and verified at build time (tools/build-puzzles.js) so they load instantly.
@@ -142,17 +197,25 @@
 
   // ---------- setup ----------
   function start(m, first) {
-    mode = MODES.includes(m) ? m : mode;
-    store.set('wend.mode', mode);
-    if (mode !== 'daily') store.set('wend.practice', mode);
+    const isChallenge = m === 'challenge' && !!challenge;
+    if (isChallenge) mode = 'challenge';
+    else {
+      mode = MODES.includes(m) ? m : (mode === 'challenge' ? 'daily' : mode);
+      if (challenge) { challenge = null; try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ } } // leaving the challenge
+    }
+    if (!isChallenge) store.set('wend.mode', mode);
+    if (mode !== 'daily' && !isChallenge) store.set('wend.practice', mode);
     clearInterval(timerId);
     if (!first) showLoader();
     const token = ++startToken, t0 = Date.now();
-    const difficulty = mode === 'daily' ? DAILY_BY_WEEKDAY[new Date().getDay()] : mode;
-    // Daily boards come from the shared pool so everyone gets the same one; practice boards are generated fresh.
-    const ready = mode === 'daily'
-      ? Promise.resolve().then(() => fromPool(difficulty) || generate({ seed: 'wend-daily-' + todayKey(), difficulty, answers: window.WEND_ANSWERS, maxMs: 4000 }))
-      : takePuzzle(difficulty);
+    const difficulty = isChallenge ? challenge.difficulty : mode === 'daily' ? DAILY_BY_WEEKDAY[new Date().getDay()] : mode;
+    // Challenges replay the exact shared puzzle; daily boards come from the shared pool so everyone gets the same one;
+    // practice boards are generated fresh.
+    const ready = isChallenge
+      ? Promise.resolve(Object.assign({}, challenge.puzzle))
+      : mode === 'daily'
+        ? Promise.resolve().then(() => fromPool(difficulty) || generate({ seed: 'wend-daily-' + todayKey(), difficulty, answers: window.WEND_ANSWERS, maxMs: 4000 }))
+        : takePuzzle(difficulty);
     ready.then((p) => {
       if (token !== startToken) return; // a newer start() superseded this one
       if (!p) throw new Error('no puzzle available');
@@ -162,7 +225,8 @@
       dragging = false; moved = false; tapWrong = null; pickup = null; solved = false; hints = 0; hintCell = -1; enterTile = -1; lastPt = null;
       startedAt = 0; elapsed = 0;
       slotWords = puzzle.lengths.map((len, k) => ({ len, color: SLOT_COLORS[k % COLORS], answer: puzzle.solution.find((x) => x.word.length === len).word, placed: null }));
-      els.newBtn.hidden = mode === 'daily';
+      els.newBtn.hidden = mode === 'daily' || mode === 'challenge';
+      els.timer.classList.remove('over');
       [...els.modes.querySelectorAll('button')].forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
       els.board.classList.remove('win');
       els.board.setAttribute('viewBox', '0 0 ' + puzzle.cols * CELL + ' ' + puzzle.rows * CELL);
@@ -173,7 +237,8 @@
       // The clock starts the moment the board is revealed, not on your first touch (no free time to study it).
       setTimeout(() => { if (token === startToken) ensureTimer(); }, FAST ? 0 : revealIn);
       // Get the next puzzle ready in the background (the one you'll most likely play next).
-      prefetch(mode === 'daily' ? store.get('wend.practice', 'hard') : mode);
+      prefetch(mode === 'daily' || mode === 'challenge' ? store.get('wend.practice', 'hard') : mode);
+      if (isChallenge) setTimeout(() => { if (token === startToken) toast(challenge.name + ' challenged you \u2014 beat ' + fmt(challenge.time)); }, FAST ? 0 : revealIn + 400);
     }).catch((err) => {
       // Never leave the loading screen spinning: say what went wrong and offer a reload.
       if (window.__loadFailed) window.__loadFailed(err && err.message ? err.message : String(err));
@@ -268,7 +333,7 @@
     // Progress: one segment per word
     els.progBar.innerHTML = slotWords.map((s) => '<i class="' + (s.placed && s.placed.correct ? 'on' : '') + '" style="' + (s.placed && s.placed.correct ? 'background:var(--c' + s.color + ')' : '') + '"></i>').join('');
     const found = slotWords.filter((s) => s.placed && s.placed.correct).length;
-    els.progText.textContent = (mode === 'daily' ? 'Daily ' : '') + NAMES[puzzle.difficulty] + ' \u00b7 ' + found + '/' + slotWords.length;
+    els.progText.textContent = (mode === 'daily' ? 'Daily ' : '') + (NAMES[puzzle.difficulty] || 'Custom') + (mode === 'challenge' ? ' \u00b7 beat ' + fmt(challenge.time) : '') + ' \u00b7 ' + found + '/' + slotWords.length;
 
     els.slots.innerHTML = '';
     slotWords.forEach((s) => {
@@ -318,7 +383,9 @@
 
   function tick() {
     elapsed = Math.floor((Date.now() - startedAt) / 1000);
-    els.timer.textContent = Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0');
+    els.timer.textContent = fmt(elapsed);
+    // in a challenge the clock turns red once you've gone past the time you're trying to beat
+    els.timer.classList.toggle('over', mode === 'challenge' && !!challenge && elapsed + PENALTY * hints > challenge.time);
   }
   function ensureTimer() { if (!startedAt) { startedAt = Date.now(); timerId = setInterval(tick, 500); } }
 
@@ -365,6 +432,21 @@
     render();
   }
 
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function refreshLink() {
+    els.linkInput.value = challengeUrl(winEff);
+    els.linkHelp.textContent = mode === 'challenge'
+      ? 'Send it back with your time (' + fmt(winEff) + ') so ' + challenge.name + ' can try to win it back.'
+      : 'Send this exact puzzle with your time (' + fmt(winEff) + '). They’ll be told whether they beat you.';
+  }
+  function showPane(which) {
+    const link = which === 'link';
+    els.paneLink.hidden = !link; els.paneImg.hidden = link;
+    els.segLink.classList.toggle('on', link); els.segImg.classList.toggle('on', !link);
+    els.segLink.setAttribute('aria-selected', String(link)); els.segImg.setAttribute('aria-selected', String(!link));
+  }
+
   function checkWin() {
     if (!slotWords.every((x) => x.placed && x.placed.correct)) return;
     solved = true;
@@ -386,11 +468,30 @@
     const today = store.get('wend.today', { date: '', count: 0 });
     if (today.date !== todayKey()) { today.date = todayKey(); today.count = 0; }
     today.count++; store.set('wend.today', today);
-    const time = els.timer.textContent;
-    els.winStats.textContent = NAMES[puzzle.difficulty] + ' solved in ' + time + (hints ? ' with ' + hints + ' hint' + (hints > 1 ? 's' : '') : '') + streakLine +
-      ' \u00b7 ' + today.count + ' solved today';
+    const time = fmt(elapsed);
+    winEff = elapsed + PENALTY * hints;
+    const label = NAMES[puzzle.difficulty] || 'Custom';
+    els.winStats.textContent = label + ' solved in ' + time + (hints ? ' + ' + PENALTY * hints + 's for ' + hints + ' hint' + (hints > 1 ? 's' : '') + ' = ' + fmt(winEff) : '') + streakLine +
+      ' · ' + today.count + ' solved today';
+
+    // Challenge result: did you beat their time?
+    els.winTitle.textContent = 'Solved!';
+    els.winVerdict.hidden = true; els.winVerdict.className = 'verdict';
+    els.retryBtn.hidden = mode !== 'challenge';
+    if (mode === 'challenge') {
+      const diff = winEff - challenge.time, who = challenge.name;
+      els.winVerdict.hidden = false;
+      if (diff < 0) { els.winVerdict.classList.add('win'); els.winVerdict.innerHTML = 'You beat ' + esc(who) + '<small>' + fmt(winEff) + ' vs ' + fmt(challenge.time) + ' — ' + span(-diff) + ' faster</small>'; }
+      else if (diff === 0) { els.winVerdict.classList.add('tie'); els.winVerdict.innerHTML = 'Dead heat with ' + esc(who) + '<small>You both finished in ' + fmt(winEff) + '</small>'; }
+      else { els.winVerdict.classList.add('lose'); els.winVerdict.innerHTML = esc(who) + ' wins this one<small>' + fmt(winEff) + ' vs ' + fmt(challenge.time) + ' — ' + span(diff) + ' slower. Want a rematch?</small>'; }
+    }
+
+    // Sharing: the challenge link is the default; the results image is one tap away.
+    els.nameInput.value = playerName();
+    refreshLink();
+    showPane('link');
     const imageReady = makeShareImage(time);
-    els.nextBtn.textContent = mode === 'daily' ? 'Play ' + NAMES[store.get('wend.practice', 'hard')] + ' puzzles' : 'Next puzzle';
+    els.nextBtn.textContent = mode === 'daily' || mode === 'challenge' ? 'Play ' + NAMES[store.get('wend.practice', 'hard')] + ' puzzles' : 'Next puzzle';
     setTimeout(() => { sfx.win(); buzz([20, 50, 20, 50, 60]); confetti(); }, 250);
     setTimeout(async () => { await imageReady; if (els.win.showModal) els.win.showModal(); }, 1500);
   }
@@ -519,6 +620,7 @@
     if (!cand) return;
     ensureTimer();
     hints++;
+    if (startedAt) tick();
     hintCell = cand.path[0];
     path = [];
     buzz(10);
@@ -656,7 +758,24 @@
   els.hint.addEventListener('click', hint);
   els.results.addEventListener('click', () => els.win.showModal && els.win.showModal());
   els.newBtn.addEventListener('click', () => { els.settings.close(); start(); });
-  els.nextBtn.addEventListener('click', () => { els.win.close(); start(mode === 'daily' ? store.get('wend.practice', 'hard') : mode); });
+  els.nextBtn.addEventListener('click', () => { els.win.close(); start(mode === 'daily' || mode === 'challenge' ? store.get('wend.practice', 'hard') : mode); });
+  els.retryBtn.addEventListener('click', () => { els.win.close(); start('challenge'); });
+  els.segLink.addEventListener('click', () => showPane('link'));
+  els.segImg.addEventListener('click', () => showPane('image'));
+  els.nameInput.addEventListener('input', () => { store.set('wend.name', els.nameInput.value.trim().slice(0, 20)); refreshLink(); });
+  const linkMessage = () => 'I solved this ' + (NAMES[puzzle.difficulty] || '') + ' Wend in ' + fmt(winEff) + (hints ? ' (with ' + hints + ' hint' + (hints > 1 ? 's' : '') + ')' : '') + '. Can you beat it?';
+  els.shareLinkBtn.addEventListener('click', async () => {
+    const url = els.linkInput.value;
+    try {
+      if (navigator.share) await navigator.share({ title: 'Wend challenge', text: linkMessage(), url });
+      else { await navigator.clipboard.writeText(linkMessage() + ' ' + url); flash(els.shareLinkBtn, 'Copied!', 'Share link'); }
+    } catch (e) { /* share sheet dismissed */ }
+  });
+  els.copyLinkBtn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(els.linkInput.value); }
+    catch (e) { els.linkInput.select(); try { document.execCommand('copy'); } catch (e2) { /* ignore */ } }
+    flash(els.copyLinkBtn, 'Copied!', 'Copy link');
+  });
   els.modes.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { els.settings.close(); start(b.dataset.mode); } });
   $('settingsBtn').addEventListener('click', () => els.settings.showModal());
   $('helpBtn').addEventListener('click', () => els.helpDlg.showModal());
@@ -681,6 +800,12 @@
   });
 
   // Test hook (used by tools/e2e.js)
-  window.__wend = { get puzzle() { return puzzle; }, get solved() { return solved; } };
-  start(store.get('wend.mode', 'daily'), true);
+  window.__wend = { get puzzle() { return puzzle; }, get solved() { return solved; }, get mode() { return mode; }, makeLink: (seconds) => challengeUrl(seconds) };
+  // Opening a challenge link drops you straight into that exact puzzle.
+  const fromUrl = parseChallenge(location.search);
+  if (fromUrl && !fromUrl.bad) { challenge = fromUrl; start('challenge', true); }
+  else {
+    start(store.get('wend.mode', 'daily'), true);
+    if (fromUrl && fromUrl.bad) setTimeout(() => toast(fromUrl.bad), FAST ? 400 : 3600);
+  }
 })();

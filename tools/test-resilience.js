@@ -73,7 +73,8 @@ const check = (name, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + name
     const page = await (await browser.newContext()).newPage();
     await page.route(/src\/game\.js/, async (route) => {
       const res = await route.fetch(); let body = await res.text();
-      body = body.replace("render();\n      hideLoader(", "throw new Error('render boom');\n      hideLoader(");
+      body = body.replace("render();\n      const revealIn", "throw new Error('render boom');\n      const revealIn");
+      if (!/render boom/.test(body)) throw new Error('test setup: injection point not found');
       route.fulfill({ response: res, body });
     });
     await page.goto(base);

@@ -17,7 +17,21 @@ const aliases = { '/apple-touch-icon.png': '/icons/apple-touch-icon.png', '/appl
 const etags = {};
 for (const [p, body] of Object.entries(files)) etags[p] = '"' + crypto.createHash('md5').update(body).digest('hex').slice(0, 16) + '"';
 for (const [p, body] of Object.entries(binary)) etags[p] = '"' + crypto.createHash('md5').update(body).digest('hex').slice(0, 16) + '"';
-const src = `const ETAGS = ${JSON.stringify(etags)};
+const src = `// Link previews: a challenge link (?c=...) gets a title/description with the time to beat.
+function ogFor(url) {
+  try {
+    const c = url.searchParams.get('c');
+    if (!c) return null;
+    let b = c.split('-').join('+').split('_').join('/');
+    while (b.length % 4) b += '=';
+    const o = JSON.parse(decodeURIComponent(escape(atob(b))));
+    const t = Math.max(0, Math.floor(Number(o.t) || 0));
+    const time = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+    const lvl = { easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' }[o.d] || '';
+    return { title: 'Wend challenge: beat ' + time, desc: 'I solved this ' + lvl + ' Wend in ' + time + '. Can you beat it?' };
+  } catch (e) { return null; }
+}
+const ETAGS = ${JSON.stringify(etags)};
 const ALIASES = ${JSON.stringify(aliases)};
 const FILES = ${JSON.stringify(files)};
 const BIN = ${JSON.stringify(binary)};
@@ -27,6 +41,13 @@ export default {
     let p = new URL(request.url).pathname;
     if (p === '/') p = '/index.html';
     if (ALIASES[p]) p = ALIASES[p];
+    const og = p === '/index.html' ? ogFor(new URL(request.url)) : null;
+    if (og) {
+      const html = FILES[p]
+        .replace('<meta property="og:title" content="Wend">', '<meta property="og:title" content="' + og.title + '">')
+        .replace('<meta property="og:description" content="A daily word-path puzzle. Use every tile exactly once.">', '<meta property="og:description" content="' + og.desc + '">');
+      return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+    }
     const etag = ETAGS[p];
     if (etag === undefined) return new Response('Not found', { status: 404 });
     const headers = { etag, 'cache-control': 'no-cache', 'x-content-type-options': 'nosniff' };
