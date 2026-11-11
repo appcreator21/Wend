@@ -1,13 +1,10 @@
 import UIKit
+import UIKit.UIGestureRecognizerSubclass
 import Messages
 
 /// The iMessage app. It shows the game and moves turns in and out of the conversation:
 /// a tapped message is handed to the page, and a finished turn comes back as a new message.
-final class MessagesViewController: MSMessagesAppViewController, GameHostDelegate {
-    /// Where a message leads when it is opened somewhere the app is not installed (a Mac, for example).
-    /// The turn itself travels in the "m" query item.
-    private static let messageBaseURL = "https://wend-92k.pages.dev/"
-
+final class MessagesViewController: MSMessagesAppViewController, GameHostDelegate, UIGestureRecognizerDelegate {
     private lazy var host: GameHost = {
         let host = GameHost(environment: "messages")
         host.delegate = self
@@ -17,6 +14,11 @@ final class MessagesViewController: MSMessagesAppViewController, GameHostDelegat
     override func viewDidLoad() {
         super.viewDidLoad()
         host.attach(to: view)
+        // Dragging a word down the board must not read as pulling the sheet closed: claim every touch the
+        // moment it lands, so the game owns the drag. The sheet is still closed from its top bar.
+        let claim = TouchClaimGesture()
+        claim.delegate = self
+        host.webView.addGestureRecognizer(claim)
     }
 
     // MARK: - Conversation
@@ -72,32 +74,19 @@ final class MessagesViewController: MSMessagesAppViewController, GameHostDelegat
 
     /// Puts the turn into the text field as a message bubble. The player sends it with the usual send arrow.
     private func insertTurn(_ body: [String: Any]) {
-        guard let conversation = activeConversation,
-              let match = body["match"] as? String,
-              var components = URLComponents(string: MessagesViewController.messageBaseURL) else {
+        guard let conversation = activeConversation else {
             host.send(["type": "sent", "ok": false])
             return
         }
-        components.queryItems = [URLQueryItem(name: "m", value: match)]
-
         // Reusing the session makes Messages keep one bubble per duel and move it down as turns are played.
         let startsNewSession = body["newSession"] as? Bool ?? false
         let session = (startsNewSession ? nil : conversation.selectedMessage?.session) ?? MSSession()
-        let message = MSMessage(session: session)
-        message.url = components.url
-        message.summaryText = body["summary"] as? String
-
         // "$<participant id>" is replaced by Messages with that person's contact name on each device.
         let me = "$" + conversation.localParticipantIdentifier.uuidString
-        let layout = MSMessageTemplateLayout()
-        layout.caption = (body["caption"] as? String)?.replacingOccurrences(of: "{me}", with: me)
-        layout.subcaption = (body["subcaption"] as? String)?.replacingOccurrences(of: "{me}", with: me)
-        if let dataURL = body["image"] as? String,
-           let comma = dataURL.firstIndex(of: ","),
-           let data = Data(base64Encoded: String(dataURL[dataURL.index(after: comma)...])) {
-            layout.image = UIImage(data: data)
+        guard let message = GameHost.makeMessage(from: body, session: session, me: me) else {
+            host.send(["type": "sent", "ok": false])
+            return
         }
-        message.layout = layout
 
         conversation.insert(message) { [weak self] error in
             let ok = error == nil
@@ -109,5 +98,39 @@ final class MessagesViewController: MSMessagesAppViewController, GameHostDelegat
                 }
             }
         }
+    }
+}
+
+extension MessagesViewController {
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        return true
+    }
+}
+
+/// Starts the instant a finger touches down and lasts until it lifts. It never cancels the touches, so the
+/// web page still gets every one; it only makes the game, not the Messages sheet, the owner of the drag.
+final class TouchClaimGesture: UIGestureRecognizer {
+    override init(target: Any?, action: Selector?) {
+        super.init(target: target, action: action)
+        cancelsTouchesInView = false
+        delaysTouchesBegan = false
+        delaysTouchesEnded = false
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        if state == .possible { state = .began }
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+        if state == .began || state == .changed { state = .changed }
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
+        state = .ended
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
+        state = .cancelled
     }
 }

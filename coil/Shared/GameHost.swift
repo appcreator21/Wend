@@ -1,5 +1,6 @@
 import UIKit
 import WebKit
+import Messages
 
 /// Hosts the game page (Web/index.html and friends, bundled flat into the target's resources) in a web view
 /// and passes small JSON events between Swift and the page. All game rules live in Web/coil.js.
@@ -161,4 +162,38 @@ private final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
     }
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {}
+}
+
+// MARK: - Turn messages
+
+extension GameHost {
+    /// Where a message leads when it is opened somewhere the app is not installed (a Mac, for example).
+    /// The turn itself travels in the "m" query item.
+    static let messageBaseURL = "https://wend-92k.pages.dev/"
+
+    /// Builds the message bubble for a turn the page wants to send. `me` stands in for the sender's name:
+    /// Messages replaces "$<participant id>" with the contact name on each device (the app has no id, so it passes "").
+    static func makeMessage(from body: [String: Any], session: MSSession, me: String) -> MSMessage? {
+        guard let match = body["match"] as? String,
+              var components = URLComponents(string: messageBaseURL) else { return nil }
+        components.queryItems = [URLQueryItem(name: "m", value: match)]
+
+        let message = MSMessage(session: session)
+        message.url = components.url
+        message.summaryText = body["summary"] as? String
+
+        func text(_ key: String) -> String? {
+            return (body[key] as? String)?.replacingOccurrences(of: "{me}", with: me).trimmingCharacters(in: .whitespaces)
+        }
+        let layout = MSMessageTemplateLayout()
+        layout.caption = text("caption")
+        layout.subcaption = text("subcaption")
+        if let dataURL = body["image"] as? String,
+           let comma = dataURL.firstIndex(of: ","),
+           let data = Data(base64Encoded: String(dataURL[dataURL.index(after: comma)...])) {
+            layout.image = UIImage(data: data)
+        }
+        message.layout = layout
+        return message
+    }
 }

@@ -1,4 +1,6 @@
 import UIKit
+import MessageUI
+import Messages
 
 /// The home-screen app. iMessage apps ship inside a normal app; this one offers solo practice and a shortcut
 /// into Messages, where the duels happen (see MessagesExtension).
@@ -31,7 +33,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 }
 
-final class GameViewController: UIViewController, GameHostDelegate {
+final class GameViewController: UIViewController, GameHostDelegate, MFMessageComposeViewControllerDelegate {
     private let host = GameHost(environment: "app")
 
     override func viewDidLoad() {
@@ -46,8 +48,40 @@ final class GameViewController: UIViewController, GameHostDelegate {
     }
 
     func gameHost(_ host: GameHost, didReceive type: String, body: [String: Any]) {
-        if type == "openMessages", let url = URL(string: "sms:") {
-            UIApplication.shared.open(url)
+        switch type {
+        case "openMessages":
+            if let url = URL(string: "sms:") { UIApplication.shared.open(url) }
+        case "send":
+            presentCompose(for: body)
+        default:
+            break
+        }
+    }
+
+    /// A solved board is sent from here: Messages' own compose sheet opens with the challenge already in it,
+    /// and the player picks who it goes to there. (Inside Messages the extension puts it in the text field instead.)
+    private func presentCompose(for body: [String: Any]) {
+        guard MFMessageComposeViewController.canSendText(),
+              let message = GameHost.makeMessage(from: body, session: MSSession(), me: "") else {
+            host.send(["type": "sent", "ok": false, "reason": "unavailable"])
+            return
+        }
+        let compose = MFMessageComposeViewController()
+        compose.message = message
+        compose.messageComposeDelegate = self
+        present(compose, animated: true)
+    }
+
+    func messageComposeViewController(_ controller: MFMessageComposeViewController,
+                                      didFinishWith result: MessageComposeResult) {
+        controller.dismiss(animated: true)
+        switch result {
+        case .sent:
+            host.send(["type": "sent", "ok": true])
+        case .cancelled:
+            host.send(["type": "sent", "ok": false, "cancelled": true])
+        default:
+            host.send(["type": "sent", "ok": false])
         }
     }
 }

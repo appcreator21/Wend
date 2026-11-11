@@ -181,12 +181,20 @@
   function home() {
     duel = null; S.matchStr = null;
     if (ENV === 'app') {
-      card({ screen: 'home', title: 'Practice', text: 'Pick a board to warm up. Duels happen in Messages: open a conversation and choose Coil from the apps row.',
-        pick: (d) => serve(d, 'solo'), alt: ['Open Messages', () => Host.post({ type: 'openMessages' })] });
+      // The home-screen app: start a challenge right here (Messages' own sheet picks who gets it), or practise.
+      card({ screen: 'home', title: 'Duel a friend', text: 'Solve a board, then send it. They race your time in Messages.',
+        main: ['Challenge a friend', challengeBoard],
+        alt: ['Practice solo', () => card({ screen: 'home', title: 'Practice', text: 'No clock to beat, nothing gets sent.', pick: (d) => serve(d, 'solo'), alt: ['Back', home] })] });
     } else {
       card({ screen: 'home', title: 'Start a duel', text: 'Pick a board. Solve it, send it, and they race your time.',
         pick: (d) => { duel = newDuel(true); serve(d, 'serve'); }, alt: ['Practice solo', () => card({ screen: 'home', title: 'Practice', text: 'No clock to beat, nothing gets sent.', pick: (d) => serve(d, 'solo'), alt: ['Back', home] })] });
     }
+  }
+
+  // The app's challenge: pick a level, solve the board, then choose who to send it to.
+  function challengeBoard() {
+    duel = newDuel(true);
+    card({ screen: 'home', title: 'Pick a level', text: 'You solve it first, then choose who gets the challenge.', pick: (d) => serve(d, 'serve'), alt: ['Back', home] });
   }
 
   // A message was opened (or arrived while the game was on screen).
@@ -258,11 +266,17 @@
     if (P.over) return afterAnswer();
     card({ screen: 'send', score: P.s, title: 'Ready to serve', lead: 'You solved it in ' + fmt(P.t) + '.',
       stat: [['Your time', fmt(P.t), NAMES[P.puzzle.difficulty] + (P.h ? ' \u00b7 ' + P.h + (P.h === 1 ? ' hint' : ' hints') : ' \u00b7 no hints')]],
-      text: 'Send it. They have to beat your time on the same board.', main: ['Send', send] });
+      text: ENV === 'app' ? 'Choose who to send it to. They have to beat your time on the same board.' : 'Send it. They have to beat your time on the same board.',
+      main: [ENV === 'app' ? 'Choose who to send to' : 'Send', send] });
   }
 
   function waiting() {
     const rec = loadRec(duel.id);
+    if (ENV === 'app') {
+      card({ screen: 'waiting', score: duel.s, title: 'Challenge sent', text: 'They play it in Messages. When they have, you get the next board there.',
+        main: ['Open Messages', () => Host.post({ type: 'openMessages' })], alt: ['Done', home] });
+      return;
+    }
     card({ screen: 'waiting', score: duel.s, title: 'Their turn',
       text: ENV === 'messages' ? 'If the message is still in the text field, tap the send arrow.\nYou get the next board when they have played.' : 'Waiting for the other player.',
       alt: rec.out ? ['Put the message back', send] : null });
@@ -306,7 +320,10 @@
   function onSent(ev) {
     if (!sending || !duel || duel.id !== sending) return;
     sending = null;
-    if (!ev.ok) { $('cardText').textContent = 'Could not add the message to the conversation. Try again.'; return; }
+    if (!ev.ok) {
+      if (!ev.cancelled) $('cardText').textContent = ev.reason === 'unavailable' ? 'This device cannot send messages. Set up Messages and try again.' : 'Could not add the message to the conversation. Try again.';
+      return;
+    }
     const rec = loadRec(duel.id);
     rec.sent = true; saveRec(duel.id, rec);
     S.matchStr = rec.out;
