@@ -25,8 +25,10 @@ final class GameHost: NSObject, WKScriptMessageHandler {
 
     private var pageReady = false
     private var queued: [[String: Any]] = []
-    private let tick = UIImpactFeedbackGenerator(style: .light)
-    private let notify = UINotificationFeedbackGenerator()
+    private lazy var selection = UISelectionFeedbackGenerator()
+    private lazy var light = UIImpactFeedbackGenerator(style: .light)
+    private lazy var medium = UIImpactFeedbackGenerator(style: .medium)
+    private lazy var notify = UINotificationFeedbackGenerator()
 
     /// - Parameter environment: "messages" inside the iMessage extension, "app" in the home-screen app.
     init(environment: String) {
@@ -51,11 +53,20 @@ final class GameHost: NSObject, WKScriptMessageHandler {
         }
     }
 
-    /// Fills the safe area of `view` with the game.
-    func attach(to view: UIView) {
+    /// Fills `view` with the game: the safe area inside Messages, edge to edge in the app (the page pads for the notch itself).
+    func attach(to view: UIView, fullBleed: Bool = false) {
         view.backgroundColor = GameHost.background
         webView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(webView)
+        if fullBleed {
+            NSLayoutConstraint.activate([
+                webView.topAnchor.constraint(equalTo: view.topAnchor),
+                webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            ])
+            return
+        }
         let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             webView.topAnchor.constraint(equalTo: guide.topAnchor),
@@ -76,6 +87,18 @@ final class GameHost: NSObject, WKScriptMessageHandler {
         webView.evaluateJavaScript("window.Host && Host.receive(\(json));", completionHandler: nil)
     }
 
+    /// Maps the page's feedback kinds onto the system generators. Selection is the light click per tile.
+    private func haptic(_ kind: String?) {
+        switch kind {
+        case "success": notify.notificationOccurred(.success)
+        case "error": notify.notificationOccurred(.error)
+        case "warning": notify.notificationOccurred(.warning)
+        case "select": selection.selectionChanged(); selection.prepare()
+        case "medium": medium.impactOccurred()
+        default: light.impactOccurred(); light.prepare()
+        }
+    }
+
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
         switch type {
@@ -85,11 +108,7 @@ final class GameHost: NSObject, WKScriptMessageHandler {
             queued = []
             waiting.forEach(send)
         case "haptic":
-            switch body["kind"] as? String {
-            case "success": notify.notificationOccurred(.success)
-            case "error": notify.notificationOccurred(.error)
-            default: tick.impactOccurred()
-            }
+            haptic(body["kind"] as? String)
         default:
             delegate?.gameHost(self, didReceive: type, body: body)
         }

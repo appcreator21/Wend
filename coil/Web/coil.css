@@ -51,7 +51,7 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--tint) 70%, tr
 [hidden] { display: none !important; }
 
 /* The one material: translucent, blurred, hairline edge, a bright rim along the top. */
-.score, .stat, .picker button, .icon-btn, .hint-btn, .toast, dialog, .clear-chip, .ghost {
+.score, .stat, .picker button, .icon-btn, .hint-btn, .toast, dialog, .side-btn, .ghost {
   -webkit-backdrop-filter: blur(22px) saturate(1.8); backdrop-filter: blur(22px) saturate(1.8); }
 
 /* ---------- cards ---------- */
@@ -199,6 +199,7 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--tint) 70%, tr
 .board .hatch-bg { fill: var(--blocked); } .board .hatch-line { fill: var(--blocked-line); }
 .board .pill-path { fill: none; stroke-width: 64; stroke-linecap: round; stroke-linejoin: round; }
 .board .pill-dot { stroke: none; }
+.board .pill-path.bad { opacity: .55; }
 .board .ring { fill: none; stroke-width: 3; }
 .board .chev { fill: none; stroke: var(--on-pill); stroke-opacity: .5; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
 .board .letter { font: 700 46px var(--round); text-anchor: middle; dominant-baseline: central; fill: var(--text); transform-box: fill-box; transform-origin: center; }
@@ -231,34 +232,44 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--tint) 70%, tr
 .toast.show { opacity: 1; transform: translateY(-100%); }
 
 /* Live word chip: takes the colour of the slot the word would fill. */
-.current-row { flex: none; display: flex; align-items: center; justify-content: center; gap: 8px; height: 36px; }
+.current-row { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 38px; }
+.current-row .current { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: center; }
 .current { margin: 0; padding: 0 16px; line-height: 36px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--muted); white-space: nowrap; transition: background .12s, color .12s; }
-.current.active { font: 700 20px/36px var(--round); letter-spacing: .12em; text-indent: .12em; background: var(--chip, var(--fill)); color: var(--chip-text, var(--text)); }
+.current.active { flex: none !important; font: 700 20px/36px var(--round); letter-spacing: .12em; text-indent: .12em; background: var(--chip, var(--fill)); color: var(--chip-text, var(--text)); }
 .current.active.fits { box-shadow: 0 0 0 3px color-mix(in srgb, var(--chip) 30%, transparent); }
 .current.done { color: var(--good); font-size: 16px; font-weight: 700; }
-.clear-chip { width: 36px; height: 36px; border-radius: 50%; background: var(--glass); border: .5px solid var(--hair); display: grid; place-items: center; animation: enter .18s ease-out; }
-.clear-chip:active { transform: scale(.9); }
+.side-btn { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--glass); border: .5px solid var(--hair); box-shadow: inset 0 .5px 0 var(--shine);
+  display: grid; place-items: center; color: var(--text); transition: transform .15s, opacity .15s; }
+.side-btn:active:not(:disabled) { transform: scale(.9); }
+.side-btn:disabled { opacity: 0; pointer-events: none; }
 
-/* Word slots: one cell per letter, paired into rows of even width. */
-.slots { flex: none; align-self: center; display: flex; flex-direction: column; gap: 5px; --cs: clamp(15px, calc((min(100vw, 520px) - 84px) / 14 - 2px), 24px); }
-.slot-row { display: flex; justify-content: space-between; gap: 12px; }
-.slot-row.solo { justify-content: center; padding-left: 19px; }
-.slot { display: flex; align-items: center; gap: 2px; }
-.slot .cell { width: var(--cs); height: var(--cs); border-radius: 6px; background: var(--fill); display: grid; place-items: center;
-  font: 700 calc(var(--cs) * .62)/1 var(--round); color: var(--on-pill); transition: background .2s; }
-.slot .check { width: 15px; height: 15px; margin-left: 4px; color: var(--good); visibility: hidden; }
-.slot.found .check { visibility: visible; }
-.slot.target .cell { animation: target .8s ease-in-out infinite; }
+/* Word slots: a glass capsule per word, one cell per letter, paired into rows of even width. */
+.slots { flex: none; align-self: center; display: flex; flex-direction: column; gap: 7px; --cs: 22px; }
+.slot-row { display: flex; justify-content: center; gap: 12px; }
+.slot { display: flex; align-items: center; gap: 4px; padding: 4px 6px 4px 5px; border-radius: 14px; background: var(--glass); border: .5px solid var(--hair);
+  box-shadow: inset 0 .5px 0 var(--shine); cursor: default; transition: background .2s, border-color .2s, transform .15s; }
+.slot .cells { display: flex; gap: 3px; }
+.slot .cell { width: var(--cs); height: var(--cs); border-radius: calc(var(--cs) * .3); background: var(--fill); display: grid; place-items: center;
+  font: 700 calc(var(--cs) * .62)/1 var(--round); color: var(--on-pill); transition: background .2s, opacity .2s; }
+.slot .mark { flex: none; width: 16px; height: 16px; display: grid; place-items: center; }
+.slot .check, .slot .x { width: 16px; height: 16px; }
+.slot .check { color: var(--good); }
+.slot .x { color: var(--bad); }
+.slot.found { background: color-mix(in srgb, var(--sc) 15%, var(--glass)); border-color: color-mix(in srgb, var(--sc) 55%, transparent); }
+.slot.wrong { cursor: pointer; border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.slot.wrong .cell { opacity: .5; }
+.slot.wrong:active { transform: scale(.96); }
+.slot.target { border-color: color-mix(in srgb, var(--sc) 70%, transparent); animation: target .9s ease-in-out infinite; }
 .slot.fresh .cell { animation: drop .38s cubic-bezier(.2, .9, .3, 1.3) both; animation-delay: calc(var(--k) * 28ms); }
-.slot.fresh .check { animation: enter .3s .35s ease-out both; }
-@keyframes target { 50% { box-shadow: 0 0 0 2px var(--sc); } }
+.slot.fresh .mark > * { animation: enter .3s .35s ease-out both; }
+@keyframes target { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--sc) 35%, transparent), inset 0 .5px 0 var(--shine); } }
 @keyframes drop { from { transform: translateY(-10px) scale(.5); opacity: 0; } }
 
 @media (max-height: 600px) {
   .bar { height: 42px; } .timer { font-size: 21px; }
   .progress { margin: 3px 2px 6px; height: 12px; }
-  .stage { gap: 6px; } .current-row { height: 32px; } .current { line-height: 32px; } .clear-chip { width: 32px; height: 32px; }
-  .slots { gap: 4px; }
+  .stage { gap: 6px; } .current-row { height: 34px; } .current { line-height: 32px; } .side-btn { width: 32px; height: 32px; }
+  .slots { gap: 4px; } .slot { padding: 3px 5px 3px 4px; }
 }
 
 .confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
@@ -282,7 +293,7 @@ dialog h2 { margin: 0 0 14px; font: 700 24px/1.15 var(--round); letter-spacing: 
 .how b { color: var(--text); font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
-  .board *, .slot *, .card-inner.in > *, dialog[open], .clear-chip, .busy-draw, .hero * { animation: none !important; }
+  .board *, .slot, .slot *, .card-inner.in > *, dialog[open], .side-btn, .busy-draw, .hero * { animation: none !important; }
   .busy-draw { stroke-dashoffset: 0; }
 }
 

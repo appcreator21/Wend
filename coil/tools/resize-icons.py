@@ -4,8 +4,13 @@ from PIL import Image
 
 here = os.path.dirname(os.path.abspath(__file__))
 root = os.path.dirname(here)
-square = Image.open(os.path.join(here, 'icon-1024.png')).convert('RGB')
-wide = Image.open(os.path.join(here, 'icon-1024x768.png')).convert('RGB')
+def load(name, size):
+    # The WebKit render comes out at 2x on a retina Mac; bring it to the exact master size.
+    im = Image.open(os.path.join(here, name)).convert('RGB')
+    return im if im.size == size else im.resize(size, Image.LANCZOS)
+
+square = load('icon-1024.png', (1024, 1024))
+wide = load('icon-1024x768.png', (1024, 768))
 
 def write(folder, name, obj):
     os.makedirs(folder, exist_ok=True)

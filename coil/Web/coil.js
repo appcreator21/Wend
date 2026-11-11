@@ -59,6 +59,7 @@
   const sfx = {
     step: (n) => tone(280 * Math.pow(2, Math.min(n, 12) / 12), 0.06),
     right: () => [440, 554, 659].forEach((f, k) => tone(f, 0.16, k * 0.07)),
+    back: () => tone(240, 0.05),
     wrong: () => tone(150, 0.18),
     win: () => [440, 554, 659, 880, 1109].forEach((f, k) => tone(f, 0.2, k * 0.09)),
   };
@@ -180,7 +181,8 @@
   function home() {
     duel = null; S.matchStr = null;
     if (ENV === 'app') {
-      card({ screen: 'home', title: 'Practice', text: 'Pick a board to warm up.\nTo duel someone, open a conversation in Messages and choose Coil from the apps row.', pick: (d) => serve(d, 'solo') });
+      card({ screen: 'home', title: 'Practice', text: 'Pick a board to warm up. Duels happen in Messages: open a conversation and choose Coil from the apps row.',
+        pick: (d) => serve(d, 'solo'), alt: ['Open Messages', () => Host.post({ type: 'openMessages' })] });
     } else {
       card({ screen: 'home', title: 'Start a duel', text: 'Pick a board. Solve it, send it, and they race your time.',
         pick: (d) => { duel = newDuel(true); serve(d, 'serve'); }, alt: ['Practice solo', () => card({ screen: 'home', title: 'Practice', text: 'No clock to beat, nothing gets sent.', pick: (d) => serve(d, 'solo'), alt: ['Back', home] })] });
@@ -346,13 +348,16 @@
 
   // ---------- playing a board ----------
   const els = { board: $('board'), wrap: $('boardWrap'), slots: $('slots'), current: $('current'), clear: $('clearChip'), timer: $('timer'), toast: $('toast'),
-    progBar: $('progBar'), progText: $('progText'), confetti: $('confetti') };
+    progBar: $('progBar'), undo: $('undoBtn'), progText: $('progText'), confetti: $('confetti') };
   const FRAME = 6;   // board frame thickness, in board units (a tile is CELL units wide)
 
   function startGame(puzzle, kind, opts) {
     expand();
-    game = { puzzle, kind, target: opts.target || 0, startAt: opts.startAt, hints: 0, hintCell: -1, found: [], path: [], solved: false, dragging: false, moved: false, lastPt: null,
-      words: puzzle.lengths.map((len, k) => ({ len, color: k % HEX.length, sol: puzzle.solution.find((x) => x.word.length === len), found: false })) };
+    // Same model as the web game: a word you place goes into the slot of its length and stays on the board,
+    // right or wrong. `placed` holds every word on the board; a slot holds the word currently in it.
+    game = { puzzle, kind, target: opts.target || 0, startAt: opts.startAt, hints: 0, hintCell: -1, placed: [], path: [], solved: false, dragging: false, moved: false, lastPt: null,
+      tapWrong: null, pickup: null,
+      words: puzzle.lengths.map((len, k) => ({ len, color: k % HEX.length, sol: puzzle.solution.find((x) => x.word.length === len), placed: null })) };
     S.screen = 'play';
     $('card').hidden = true; $('play').hidden = false;
     $('roundLabel').textContent = opts.label || '';
@@ -421,9 +426,13 @@
     return rows.sort((a, b) => a[0].len - b[0].len);
   }
 
+  const ok = (w) => !!(w.placed && w.placed.correct);
+  const slotFor = (len) => game.words.find((w) => w.len === len && !ok(w));
+  const CROSS = '<svg class="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+
   function render() {
     const g = game, p = g.puzzle, owner = new Map();
-    g.words.forEach((w) => { if (w.found) w.sol.path.forEach((c) => owner.set(c, w)); });
+    g.placed.forEach((e) => e.path.forEach((c) => owner.set(c, e)));
     const W = p.cols * CELL, H = p.rows * CELL;
     let svg = '<defs><pattern id="hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="hatch-bg" width="14" height="14"/><rect class="hatch-line" width="5" height="14"/></pattern><clipPath id="boardClip"><rect x="0" y="0" width="' + W + '" height="' + H + '" rx="26"/></clipPath></defs>' +
       '<rect class="frame" x="' + -FRAME + '" y="' + -FRAME + '" width="' + (W + 2 * FRAME) + '" height="' + (H + 2 * FRAME) + '" rx="' + (26 + FRAME) + '"/><g clip-path="url(#boardClip)">';
@@ -440,28 +449,27 @@
     });
     svg += '</g>';
     if (g.hintCell >= 0) svg += '<rect class="hint-ring" x="' + (cx(g.hintCell) - 44) + '" y="' + (cy(g.hintCell) - 44) + '" width="88" height="88" rx="14"/>';
-    // 2. word snakes, start rings, chevrons and badges
-    const found = g.words.filter((w) => w.found);
-    found.forEach((w) => {
-      svg += snake(w.sol.path, wc(w.color), w.fresh ? 'pop' : '');
-      svg += '<circle class="ring" cx="' + cx(w.sol.path[0]) + '" cy="' + cy(w.sol.path[0]) + '" r="33" stroke="color-mix(in srgb, ' + wc(w.color) + ' 62%, #000)"/>';
+    // 2. word snakes, start rings, chevrons and badges (a wrong word keeps its snake but gets no tick)
+    g.placed.forEach((e) => {
+      svg += snake(e.path, wc(e.color), (e.fresh ? 'pop ' : '') + (e.correct ? '' : 'bad'));
+      svg += '<circle class="ring" cx="' + cx(e.path[0]) + '" cy="' + cy(e.path[0]) + '" r="33" stroke="color-mix(in srgb, ' + wc(e.color) + ' 62%, #000)"/>';
     });
-    found.forEach((w) => { svg += chevrons(w.sol.path); });
-    const fit = g.path.length ? g.words.find((w) => !w.found && w.len === g.path.length) : null;
+    g.placed.forEach((e) => { svg += chevrons(e.path); });
+    const fit = g.path.length ? slotFor(g.path.length) : null;
     if (g.path.length) {
       const col = fit ? wc(fit.color) : 'var(--muted)';
       svg += '<g id="trace" class="trace">' + snake(g.path, col, '') + chevrons(g.path) + '</g>';
       if (g.enterTile >= 0) svg += '<circle class="ripple" cx="' + cx(g.enterTile) + '" cy="' + cy(g.enterTile) + '" r="40" stroke="' + col + '"/>';
     }
-    found.forEach((w) => {
+    g.placed.filter((e) => e.correct).forEach((e) => {
       // The badge sits on the corner of the first tile, away from where the word heads.
-      const a = w.sol.path[0], b = w.sol.path[1];
+      const a = e.path[0], b = e.path[1];
       const dx = Math.sign(cx(b) - cx(a)), dy = Math.sign(cy(b) - cy(a));
       const bx = dx ? -dx * 30 : 30, by = dx ? -30 : -dy * 30;
-      svg += CHECK(cx(a) + bx, cy(a) + by, wc(w.color), w.fresh ? 'enter' : '');
+      svg += CHECK(cx(a) + bx, cy(a) + by, wc(e.color), e.fresh ? 'enter' : '');
     });
     // 3. letters on top
-    const fresh = new Set(); found.forEach((w) => { if (w.fresh) w.sol.path.forEach((c) => fresh.add(c)); });
+    const fresh = new Set(); g.placed.forEach((e) => { if (e.fresh) e.path.forEach((c) => fresh.add(c)); });
     p.letters.forEach((ch, i) => {
       if (!ch) return;
       const on = owner.has(i) || g.path.includes(i), diag = Math.floor(i / p.cols) + (i % p.cols);
@@ -471,26 +479,41 @@
     els.board.innerHTML = svg;
     els.board.classList.toggle('win', g.solved);
 
-    // Live word chip (takes the colour of the slot it would fill) and its clear button
+    // Live word chip (takes the colour of the slot it would fill), plus clear and undo
     const word = g.path.map((i) => p.letters[i]).join('');
+    const anyWrong = g.placed.some((e) => !e.correct);
     els.current.className = 'current' + (word ? ' active' : g.solved ? ' done' : '') + (fit ? ' fits' : '');
     els.current.style.setProperty('--chip', fit ? wc(fit.color) : 'var(--pill)');
     els.current.style.setProperty('--chip-text', fit ? 'var(--on-pill)' : 'var(--text)');
-    els.current.textContent = word || (g.solved ? 'Solved!' : 'Drag across tiles to spell a word');
-    els.clear.hidden = !word || g.solved;
+    els.current.textContent = word || (g.solved ? 'Solved!' : anyWrong ? 'Tap a wrong word to remove it' : 'Drag across tiles to spell a word');
+    els.clear.disabled = !word || g.solved;
+    els.undo.disabled = g.solved || (!g.path.length && !g.placed.length);
 
     // Progress: one segment per word
-    els.progBar.innerHTML = g.words.map((w) => '<i' + (w.found ? ' class="on" style="background:' + wc(w.color) + '"' : '') + '></i>').join('');
+    const found = g.words.filter(ok);
+    els.progBar.innerHTML = g.words.map((w) => '<i' + (ok(w) ? ' class="on" style="background:' + wc(w.color) + '"' : '') + '></i>').join('');
     els.progText.textContent = (NAMES[p.difficulty] || 'Custom') + ' · ' + found.length + '/' + g.words.length;
 
-    // Word slots: a cell per letter, filled in the word's colour once found
-    els.slots.innerHTML = slotRows(g.words).map((row) => '<div class="slot-row' + (row.length === 1 ? ' solo' : '') + '">' + row.map((w) =>
-      '<div class="slot' + (w.found ? ' found' : '') + (w.fresh ? ' fresh' : '') + (w === fit ? ' target' : '') + '" style="--sc:' + wc(w.color) + '" aria-label="' + (w.found ? w.sol.word : w.len + ' letter word, not found yet') + '">' +
-      w.sol.word.split('').map((ch, k) => '<span class="cell" style="--k:' + k + (w.found ? ';background:' + wc(w.color) + '">' + ch : '">') + '</span>').join('') + TICK + '</div>').join('') + '</div>').join('');
+    // Word slots: a capsule per word with a cell per letter. A placed word fills it in the word's colour;
+    // a wrong one is dimmed with a cross, and tapping it takes it back off the board.
+    const rows = slotRows(g.words), avail = els.wrap.clientWidth || (innerWidth - 24);
+    let cs = 26;
+    rows.forEach((row) => {
+      const letters = row.reduce((a, w) => a + w.len, 0);
+      cs = Math.min(cs, (avail - 12 * (row.length - 1) - 40 * row.length - 3 * letters) / letters);
+    });
+    els.slots.style.setProperty('--cs', Math.max(13, Math.floor(cs)) + 'px');
+    els.slots.innerHTML = rows.map((row) => '<div class="slot-row">' + row.map((w) => {
+      const bad = !!w.placed && !w.placed.correct;
+      return '<button type="button" class="slot' + (ok(w) ? ' found' : '') + (bad ? ' wrong' : '') + (w.placed && w.placed.fresh ? ' fresh' : '') + (w === fit ? ' target' : '') +
+        '" data-len="' + w.len + '" style="--sc:' + wc(w.color) + '" aria-label="' + (ok(w) ? w.sol.word + ', found' : bad ? w.placed.word + ', not right, tap to remove' : w.len + ' letter word, empty') + '">' +
+        '<span class="cells">' + w.sol.word.split('').map((ch, k) => '<span class="cell" style="--k:' + k + (w.placed ? ';background:' + wc(w.color) + '">' + w.placed.word[k] : '">') + '</span>').join('') + '</span>' +
+        '<span class="mark">' + (ok(w) ? TICK : bad ? CROSS : '') + '</span></button>';
+    }).join('') + '</div>').join('');
 
     // one-shot animation flags are consumed by this render
     g.enterTile = -1; g.deal = false;
-    g.words.forEach((w) => { w.fresh = false; });
+    g.placed.forEach((e) => { e.fresh = false; });
   }
 
   let toastTimer;
@@ -528,25 +551,55 @@
     } catch (e) { /* decoration only */ }
   }
 
+  function clearPath() { if (game && game.path.length) { game.path = []; game.hintCell = -1; render(); } }
+
+  // The word goes into the slot with that many letters: an empty one first, else one holding a wrong word.
+  // Right or wrong, it stays on the board. (Never auto-clear: the player keeps dragging, drags back, or clears.)
   function submit() {
     const g = game;
     if (!g || g.solved || !g.path.length) return;
     const word = g.path.map((i) => g.puzzle.letters[i]).join('');
-    const open = g.words.filter((w) => !w.found);
-    if (word.length < open[0].len) return; // too short to be anything yet: keep it selected and keep going
-    const key = (pth) => pth.slice().sort((a, b) => a - b).join(',');
-    const hit = open.find((w) => w.sol.word === word && key(w.sol.path) === key(g.path));
-    if (hit) {
-      hit.found = true; hit.fresh = true; g.path = []; g.hintCell = -1;
-      sfx.right(); haptic('success');
-      if (g.words.every((w) => w.found)) solved(); else render();
+    const slots = g.words.filter((w) => w.len === word.length);
+    const slot = slots.find((w) => !w.placed) || slots.find((w) => !w.placed.correct);
+    if (!slot) {
+      // Nothing to place yet: keep the path selected so the player can keep dragging, drag back to
+      // drop a letter, or clear it.
+      const min = Math.min(...g.words.map((w) => w.len));
+      if (word.length < min) toast('Keep going — words start at ' + min + ' letters');
+      else { toast(slots.length ? 'You already found the ' + word.length + '-letter word' : 'No ' + word.length + '-letter word here — keep going or drag back'); shake(); sfx.wrong(); haptic('warning'); }
       return;
     }
-    if (!open.some((w) => w.len === word.length)) { toast('No ' + word.length + '-letter word left'); return; }
-    sfx.wrong(); haptic('error');
-    shake();
-    toast('Not a hidden word');
-    setTimeout(() => { if (game === g && !g.dragging) { g.path = []; render(); } }, 320);
+    // Replace the slot's previous (wrong) word and any wrong words this path runs over.
+    const mine = new Set(g.path);
+    g.placed = g.placed.filter((e) => {
+      const evict = e === slot.placed || e.path.some((c) => mine.has(c));
+      if (evict) g.words.forEach((w) => { if (w.placed === e) w.placed = null; });
+      return !evict;
+    });
+    // Correct means the right word on the right tiles (the generator guarantees no other route spells it).
+    const tiles = (pth) => pth.slice().sort((a, b) => a - b).join(',');
+    const entry = { word, path: g.path.slice(), color: slot.color, fresh: true, correct: word === slot.sol.word && tiles(g.path) === tiles(slot.sol.path) };
+    slot.placed = entry; g.placed.push(entry);
+    g.path = []; g.hintCell = -1;
+    if (entry.correct) { sfx.right(); haptic('success'); toast('Correct!'); }
+    else { sfx.wrong(); haptic('error'); toast('Not quite — tap it to remove'); }
+    if (g.words.every(ok)) solved(); else render();
+  }
+
+  function detach(entry) {
+    game.placed = game.placed.filter((e) => e !== entry);
+    game.words.forEach((w) => { if (w.placed === entry) w.placed = null; });
+  }
+  function removeWord(entry) {
+    detach(entry);
+    game.path = [];
+    sfx.back(); haptic('light');
+    render();
+  }
+  function undo() {
+    if (!game || game.solved) return;
+    if (game.path.length) { clearPath(); haptic('light'); }
+    else if (game.placed.length) removeWord(game.placed[game.placed.length - 1]);
   }
 
   function solved() {
@@ -585,9 +638,10 @@
 
   $('hintBtn').addEventListener('click', () => {
     if (!game || game.solved) return;
-    const w = game.words.find((x) => !x.found);
+    const w = game.words.find((x) => !ok(x));
     game.hints++; game.hintCell = w.sol.path[0]; game.path = [];
-    tick(); render(); toast('A ' + w.len + '-letter word starts here (+' + PENALTY + 's)');
+    haptic('medium');
+    tick(); render(); toast('Start here — a ' + w.len + '-letter word (+' + PENALTY + 's)');
   });
   $('quitBtn').addEventListener('click', () => {
     if (!game) return;
@@ -601,7 +655,7 @@
   // ---------- input ----------
   // Pointer positions are tracked in grid units and interpolated between events, so a fast flick never skips a
   // tile. While dragging, a tile only counts once the finger is near its centre, which stops corner-cutting
-  // from catching the wrong neighbour.
+  // from catching the wrong neighbour. The rules below are the web game's.
   const INNER = 0.38;
   // The SVG is centred in the wrap and scaled to fit; its viewBox is the grid plus the frame on every side.
   function toGrid(e) {
@@ -616,22 +670,28 @@
     const i = r * p.cols + c;
     return p.letters[i] ? i : -1;
   }
-  const lockedSet = () => { const s = new Set(); game.words.forEach((w) => { if (w.found) w.sol.path.forEach((c) => s.add(c)); }); return s; };
+  // Tiles of correct words are locked; tiles of wrong words can be traced over (that replaces the wrong word).
+  const lockedSet = () => { const s = new Set(); game.placed.forEach((e) => { if (e.correct) e.path.forEach((c) => s.add(c)); }); return s; };
   const adjacent = (a, b) => Gen.neighbours(a, game.puzzle.rows, game.puzzle.cols).includes(b);
-  function addTile(i) { game.path.push(i); game.enterTile = i; sfx.step(game.path.length); haptic('tick'); }
+  function addTile(i) { game.path.push(i); game.enterTile = i; sfx.step(game.path.length); haptic('select'); }
 
   els.wrap.addEventListener('pointerdown', (e) => {
     if (!game || game.solved) return;
     const g = toGrid(e), i = cellAt(g.gx, g.gy, false);
-    if (i < 0) { if (game.path.length) { game.path = []; render(); } return; }
+    if (i < 0) { clearPath(); return; }
     if (lockedSet().has(i)) return;
     e.preventDefault();
-    game.hintCell = -1; game.moved = false; game.lastPt = g; game.dragging = true;
+    game.hintCell = -1; game.moved = false; game.tapWrong = null; game.pickup = null; game.lastPt = g; game.dragging = true;
     const path = game.path, last = path[path.length - 1];
-    if (path.length && i === last) game.dragging = 'tapLast';           // tapping the last tile again places the word
-    else if (path.includes(i)) game.path = path.slice(0, path.indexOf(i) + 1);
+    if (path.length && i === last) game.dragging = 'maybeSubmit';          // tapping the last tile again places the word
+    else if (path.includes(i)) { game.path = path.slice(0, path.indexOf(i) + 1); haptic('select'); }
     else if (path.length && adjacent(last, i)) addTile(i);
-    else { game.path = []; addTile(i); }
+    else {
+      game.path = []; addTile(i);
+      const wp = game.placed.find((x) => !x.correct && x.path.includes(i)) || null;
+      game.tapWrong = wp;                                                    // a plain tap on a wrong word removes it
+      if (wp && wp.path[wp.path.length - 1] === i) game.pickup = wp;         // ...but dragging out from its last tile picks it back up
+    }
     try { els.wrap.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     render();
   });
@@ -644,9 +704,19 @@
       const n = Math.max(1, Math.ceil(Math.hypot(g.gx - from.gx, g.gy - from.gy) / 0.12));
       for (let k = 1; k <= n; k++) {
         const i = cellAt(from.gx + ((g.gx - from.gx) * k) / n, from.gy + ((g.gy - from.gy) * k) / n, true);
-        const path = game.path, last = path[path.length - 1];
-        if (i < 0 || locked.has(i) || i === last) continue;
-        if (path.length > 1 && i === path[path.length - 2]) { path.pop(); game.moved = true; render(); }
+        if (i < 0 || locked.has(i)) continue;
+        let last = game.path[game.path.length - 1];
+        if (i === last) continue;
+        if (game.pickup && game.path.length === 1) {
+          // Dragging out from the last tile of a wrong word picks that word back up, so you can extend it
+          // (drag onward) or shorten it (drag back over its previous tile).
+          const pp = game.pickup.path, back = pp[pp.length - 2];
+          if (i === back || (adjacent(last, i) && !pp.includes(i))) {
+            game.path = pp.slice(); detach(game.pickup); game.pickup = null; game.tapWrong = null; last = game.path[game.path.length - 1];
+          } else continue;
+        }
+        const path = game.path;
+        if (path.length > 1 && i === path[path.length - 2]) { path.pop(); game.moved = true; sfx.back(); haptic('select'); render(); }
         else if (!path.includes(i) && adjacent(last, i)) { addTile(i); game.moved = true; render(); }
       }
       game.lastPt = g;
@@ -654,14 +724,27 @@
   });
   const release = () => {
     if (!game || !game.dragging) return;
-    const tapLast = game.dragging === 'tapLast' && !game.moved;
+    const wasSubmitTap = game.dragging === 'maybeSubmit' && !game.moved;
     const moved = game.moved;
     game.dragging = false;
-    if (moved || tapLast) submit();
+    if (moved || wasSubmitTap) submit();
+    else if (game.tapWrong) { const w = game.tapWrong; game.tapWrong = null; removeWord(w); }
+    else if (game.path.length === 1) render();   // single tap: keep the tile selected for tap mode
   };
   els.wrap.addEventListener('pointerup', release);
   els.wrap.addEventListener('pointercancel', () => { if (game) game.dragging = false; });
-  els.clear.addEventListener('click', () => { if (game && !game.solved && game.path.length) { game.path = []; game.hintCell = -1; render(); } });
+  els.clear.addEventListener('click', () => { clearPath(); });
+  els.undo.addEventListener('click', undo);
+  // A wrong word in a slot can be tapped away.
+  els.slots.addEventListener('click', (e) => {
+    const b = e.target.closest('.slot.wrong');
+    if (!b || !game || game.solved) return;
+    const w = game.words.find((x) => x.len === Number(b.dataset.len));
+    if (w && w.placed && !w.placed.correct) removeWord(w.placed);
+  });
+  // Tapping anywhere outside the board also clears a half-built word.
+  // (Capture phase: it must run before the board re-renders, which detaches the tapped tile.)
+  document.addEventListener('pointerdown', (e) => { if (game && !game.solved && game.path.length && !e.target.closest('.board-wrap, button, dialog')) clearPath(); }, true);
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 
   // Test hook (coil/tools/test-duel.js)

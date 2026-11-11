@@ -73,8 +73,11 @@
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </div>
     <div class="current-row">
+      <button id="undoBtn" class="side-btn" aria-label="Undo" disabled>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h9.5a6.5 6.5 0 0 1 0 13H10"/></svg>
+      </button>
       <p id="current" class="current" aria-live="polite"></p>
-      <button id="clearChip" class="clear-chip" aria-label="Clear current word" hidden>
+      <button id="clearChip" class="side-btn" aria-label="Clear current word" disabled>
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
@@ -92,8 +95,8 @@
 <dialog id="howDlg">
   <h2>How to play</h2>
   <ul class="how">
-    <li>Drag through neighbouring tiles &mdash; up, down, left or right &mdash; to spell a word. Let go to lock it in.</li>
-    <li>The boxes under the board show how long each hidden word is. Every tile belongs to <b>exactly one</b> word.</li>
+    <li>Drag through neighbouring tiles &mdash; up, down, left or right &mdash; to spell a word. Let go to place it in the box of that length. Not enough letters yet? Keep dragging, drag back to drop a letter, or tap &times; to clear.</li>
+    <li>The boxes under the board show how long each hidden word is. Every tile belongs to <b>exactly one</b> word. A wrong word stays on the board until you tap it, or hit undo.</li>
     <li><b>Duel:</b> solve a board and send it. Your opponent plays the same board against your time. Fastest wins the round, then they serve the next board back to you.</li>
     <li>First to <b>3 rounds</b> wins. A hint costs 15 seconds. Once you start a round the clock keeps running, even if you leave.</li>
   </ul>
