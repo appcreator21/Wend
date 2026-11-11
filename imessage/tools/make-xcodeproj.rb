@@ -8,7 +8,7 @@ root = File.expand_path('..', __dir__)
 path = File.join(root, 'Coil.xcodeproj')
 FileUtils.rm_rf(path)
 project = Xcodeproj::Project.new(path)
-deployment = '15.0'
+deployment = '16.4' # the page's CSS uses color-mix(), which needs iOS 16.2+
 
 config_ref = project.new_file('Config.xcconfig')
 project.build_configurations.each do |c|

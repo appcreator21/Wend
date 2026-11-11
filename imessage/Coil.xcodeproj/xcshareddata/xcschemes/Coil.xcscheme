@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "BEF320692F30416B3BB12677"
+               BlueprintIdentifier = "4F528BC0ACE60EAACD49054A"
                BuildableName = "Coil.app"
                BlueprintName = "Coil"
                ReferencedContainer = "container:Coil.xcodeproj">
@@ -30,7 +30,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "BEF320692F30416B3BB12677"
+            BlueprintIdentifier = "4F528BC0ACE60EAACD49054A"
             BuildableName = "Coil.app"
             BlueprintName = "Coil"
             ReferencedContainer = "container:Coil.xcodeproj">
@@ -53,7 +53,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "BEF320692F30416B3BB12677"
+            BlueprintIdentifier = "4F528BC0ACE60EAACD49054A"
             BuildableName = "Coil.app"
             BlueprintName = "Coil"
             ReferencedContainer = "container:Coil.xcodeproj">
@@ -70,7 +70,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "BEF320692F30416B3BB12677"
+            BlueprintIdentifier = "4F528BC0ACE60EAACD49054A"
             BuildableName = "Coil.app"
             BlueprintName = "Coil"
             ReferencedContainer = "container:Coil.xcodeproj">

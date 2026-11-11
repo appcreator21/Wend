@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="dark">
 <title>Coil</title>
 <link rel="stylesheet" href="coil.css">
 </head>
@@ -10,20 +11,31 @@
 
 <!-- Card screens: home, round intro, results, waiting. One is visible at a time. -->
 <main id="card" class="card" hidden>
-  <div class="card-inner">
-    <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 8h24v24H14V14h12v12h-6" /></svg><span>Coil</span></div>
-    <div id="score" class="score" hidden>
-      <div><small>You</small><b id="scoreMe">0</b></div>
-      <i id="scoreNote"></i>
-      <div><small>Them</small><b id="scoreThem">0</b></div>
+  <div id="cardInner" class="card-inner">
+    <div class="card-head">
+      <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path pathLength="1" d="M8 8h24v24H14V14h12v12h-6" /></svg><span>Coil</span></div>
+      <div id="score" class="score" hidden>
+        <div class="side" id="sideMe"><small>You</small><b id="scoreMe">0</b><span id="pipsMe" class="pips" aria-hidden="true"></span></div>
+        <i id="scoreNote"></i>
+        <div class="side" id="sideThem"><small>Them</small><b id="scoreThem">0</b><span id="pipsThem" class="pips" aria-hidden="true"></span></div>
+      </div>
     </div>
+    <div id="busy" class="busy" hidden aria-hidden="true"><svg viewBox="0 0 40 40"><path class="busy-track" d="M8 8h24v24H14V14h12v12h-6" /><path class="busy-draw" pathLength="1" d="M8 8h24v24H14V14h12v12h-6" /></svg></div>
+    <div id="hero" class="hero" hidden aria-hidden="true"><svg viewBox="-6 -6 212 212">
+      <rect class="h-frame" x="-6" y="-6" width="212" height="212" rx="34"/><rect class="h-cell" width="200" height="200" rx="28"/>
+      <polyline class="h-pill" pathLength="1" points="50,50 150,50 150,150 50,150"/>
+      <polyline class="h-chev" points="95,61 107,50 95,39"/><polyline class="h-chev" points="139,95 150,107 161,95"/><polyline class="h-chev" points="105,139 93,150 105,161"/>
+      <text x="50" y="52" style="--d:.2s">C</text><text x="150" y="52" style="--d:.42s">O</text><text x="150" y="152" style="--d:.64s">I</text><text x="50" y="152" style="--d:.86s">L</text>
+    </svg></div>
     <h1 id="cardTitle"></h1>
+    <div id="stat" class="stat" hidden></div>
+    <p id="cardLead" class="lead"></p>
     <p id="cardText"></p>
     <div id="picker" class="picker" hidden>
-      <button data-d="easy"><b>Easy</b><small>4 words</small></button>
-      <button data-d="medium"><b>Medium</b><small>5 words</small></button>
-      <button data-d="hard"><b>Hard</b><small>6 words</small></button>
-      <button data-d="expert"><b>Expert</b><small>7 words</small></button>
+      <button data-d="easy"><span class="lvl" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></span><b>Easy</b><small>4 words<em> &middot; 5&times;5</em></small></button>
+      <button data-d="medium"><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i><i></i></span><b>Medium</b><small>5 words<em> &middot; 6&times;6</em></small></button>
+      <button data-d="hard"><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><b>Hard</b><small>6 words<em> &middot; 7&times;7</em></small></button>
+      <button data-d="expert"><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><b>Expert</b><small>7 words<em> &middot; 8&times;8</em></small></button>
     </div>
     <button id="cardMain" class="primary" hidden></button>
     <button id="cardAlt" class="ghost" hidden></button>
@@ -34,31 +46,56 @@
 <!-- The puzzle -->
 <main id="play" class="play" hidden>
   <header class="bar">
-    <button id="quitBtn" class="chip" aria-label="Leave puzzle">&#x2715;</button>
+    <button id="quitBtn" class="icon-btn" aria-label="Leave puzzle">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
     <div class="bar-mid">
-      <span id="roundLabel" class="label"></span>
-      <span id="timer" class="timer">0:00</span>
-      <span id="target" class="label"></span>
+      <div class="timer-wrap" aria-label="Elapsed time">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span id="timer" class="timer">0:00</span>
+      </div>
+      <div class="bar-sub"><span id="roundLabel"></span><span id="target" class="target"></span></div>
     </div>
-    <button id="hintBtn" class="chip">Hint</button>
+    <button id="hintBtn" class="hint-btn">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></svg>
+      <span>Hint</span>
+    </button>
   </header>
-  <div id="boardWrap" class="board-wrap">
-    <svg id="board" class="board" role="group" aria-label="Letter grid"></svg>
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div class="progress">
+    <div id="progBar" class="prog-bar" aria-hidden="true"></div>
+    <span id="progText" class="prog-text" aria-live="polite"></span>
   </div>
-  <p id="current" class="current" aria-live="polite"></p>
-  <section id="slots" class="slots" aria-label="Words to find"></section>
+
+  <div class="stage">
+    <div id="boardWrap" class="board-wrap">
+      <svg id="board" class="board" role="group" aria-label="Letter grid"></svg>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </div>
+    <div class="current-row">
+      <p id="current" class="current" aria-live="polite"></p>
+      <button id="clearChip" class="clear-chip" aria-label="Clear current word" hidden>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <section id="slots" class="slots" aria-label="Words to find"></section>
+  </div>
 </main>
 
-<div id="resume" class="resume" hidden><button class="primary">Tap to keep playing</button></div>
+<div id="resume" class="resume" hidden>
+  <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 8h24v24H14V14h12v12h-6" /></svg><span>Coil</span></div>
+  <button class="primary">Tap to keep playing</button>
+</div>
+
+<canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
 
 <dialog id="howDlg">
   <h2>How to play</h2>
-  <ul>
-    <li>Drag through neighbouring tiles (up, down, left, right) to spell a word. Let go to lock it in.</li>
-    <li>The boxes under the board show how long each hidden word is. Every tile belongs to exactly one word.</li>
-    <li><b>Duel:</b> solve a puzzle and send it. Your opponent plays the same board against your time. Fastest wins the round, then they serve the next board back to you.</li>
-    <li>First to 3 rounds wins. A hint costs 15 seconds. Once you start a round the clock keeps running, even if you leave.</li>
+  <ul class="how">
+    <li>Drag through neighbouring tiles &mdash; up, down, left or right &mdash; to spell a word. Let go to lock it in.</li>
+    <li>The boxes under the board show how long each hidden word is. Every tile belongs to <b>exactly one</b> word.</li>
+    <li><b>Duel:</b> solve a board and send it. Your opponent plays the same board against your time. Fastest wins the round, then they serve the next board back to you.</li>
+    <li>First to <b>3 rounds</b> wins. A hint costs 15 seconds. Once you start a round the clock keeps running, even if you leave.</li>
   </ul>
   <form method="dialog"><button class="primary">Got it</button></form>
 </dialog>
