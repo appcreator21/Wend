@@ -1,0 +1,556 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1E64539E7BA2082BAEA20C55 /* coil.css in Resources */ = {isa = PBXBuildFile; fileRef = BF784609EB706556A296C23A /* coil.css */; };
+		1FB241A3E1628FF7B92B9DA2 /* puzzles.js in Resources */ = {isa = PBXBuildFile; fileRef = FED098B8ECA7386FC6C3A9DB /* puzzles.js */; };
+		218329EE39AD3B405FE7253B /* GameHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6DF988384A883712EB06EF3 /* GameHost.swift */; };
+		2E7FDF08F4EB03E817A56C58 /* puzzles.js in Resources */ = {isa = PBXBuildFile; fileRef = FED098B8ECA7386FC6C3A9DB /* puzzles.js */; };
+		56CABB135E6C02C0B3268042 /* generator.js in Resources */ = {isa = PBXBuildFile; fileRef = 2905D8F90B17FAADC5E9F5FF /* generator.js */; };
+		78175DB4612289392FCF1C88 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = BF603C08A9CF145AF64DFF2E /* index.html */; };
+		8A68BD0C9CFBED80DC50E1D0 /* GameHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6DF988384A883712EB06EF3 /* GameHost.swift */; };
+		8AE71520EEB6B2ACA4A57209 /* coil.js in Resources */ = {isa = PBXBuildFile; fileRef = 302D726E7C6FEF5137FEACA0 /* coil.js */; };
+		96C389DC33EC768590CF93E5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1502CB7DF8B41B4916BB1CF0 /* Assets.xcassets */; };
+		983FBB9C1A018A9556ACECC4 /* generator.js in Resources */ = {isa = PBXBuildFile; fileRef = 2905D8F90B17FAADC5E9F5FF /* generator.js */; };
+		9F97DE1DFBE00346A77453A2 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = BF603C08A9CF145AF64DFF2E /* index.html */; };
+		B22E03054632C90B2A26CB23 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5BE7DDE7F67EF551D375520 /* Assets.xcassets */; };
+		BA25A1E9882F1749C5E42D14 /* MessagesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B004D74F5CE922E0A19066D3 /* MessagesViewController.swift */; };
+		BBF11E2E460202F2A0533A6C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09267EB8882C2308D56A5304 /* AppDelegate.swift */; };
+		C8C764895814477CF7F6620F /* coil.css in Resources */ = {isa = PBXBuildFile; fileRef = BF784609EB706556A296C23A /* coil.css */; };
+		D33DC4305D21C2F15A6842CB /* coil.js in Resources */ = {isa = PBXBuildFile; fileRef = 302D726E7C6FEF5137FEACA0 /* coil.js */; };
+		EEB3E265590808A8914C0331 /* words.js in Resources */ = {isa = PBXBuildFile; fileRef = CD95FFC6F2856CADB52E6A75 /* words.js */; };
+		FF5ECF4FBAF1CE8CB831F8AC /* CoilMessages.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74338929181A416A9EF33DAA /* CoilMessages.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		FF9673EE2B0BC9BD4AE21E09 /* words.js in Resources */ = {isa = PBXBuildFile; fileRef = CD95FFC6F2856CADB52E6A75 /* words.js */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8A0CCE43DA0CB2B667170545 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A4054BE53084753125ADB48B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CC1DC101166B9C63FEAFBDEE;
+			remoteInfo = CoilMessages;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5CE25E85CC0B977896F4F597 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FF5ECF4FBAF1CE8CB831F8AC /* CoilMessages.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		037A87100FF12E21FCE43EEC /* Config.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		04058472BB9227018BD7DBBC /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		09267EB8882C2308D56A5304 /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		1502CB7DF8B41B4916BB1CF0 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2905D8F90B17FAADC5E9F5FF /* generator.js */ = {isa = PBXFileReference; includeInIndex = 1; name = generator.js; path = src/generator.js; sourceTree = "<group>"; };
+		2F137A08B1CBDB0689C16262 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		302D726E7C6FEF5137FEACA0 /* coil.js */ = {isa = PBXFileReference; includeInIndex = 1; path = coil.js; sourceTree = "<group>"; };
+		74338929181A416A9EF33DAA /* CoilMessages.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CoilMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		80E71C673B33C834166C3743 /* Coil.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Coil.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B004D74F5CE922E0A19066D3 /* MessagesViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MessagesViewController.swift; sourceTree = "<group>"; };
+		B6DF988384A883712EB06EF3 /* GameHost.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameHost.swift; sourceTree = "<group>"; };
+		BF603C08A9CF145AF64DFF2E /* index.html */ = {isa = PBXFileReference; includeInIndex = 1; path = index.html; sourceTree = "<group>"; };
+		BF784609EB706556A296C23A /* coil.css */ = {isa = PBXFileReference; includeInIndex = 1; path = coil.css; sourceTree = "<group>"; };
+		C5BE7DDE7F67EF551D375520 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CD95FFC6F2856CADB52E6A75 /* words.js */ = {isa = PBXFileReference; includeInIndex = 1; name = words.js; path = data/words.js; sourceTree = "<group>"; };
+		FED098B8ECA7386FC6C3A9DB /* puzzles.js */ = {isa = PBXFileReference; includeInIndex = 1; name = puzzles.js; path = data/puzzles.js; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7BF88B378DDFA6F98D85CB09 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B5A095A4A040A2FB0F704BFB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0B7A9F4DE13DB858CF726E96 /* MessagesExtension */ = {
+			isa = PBXGroup;
+			children = (
+				B004D74F5CE922E0A19066D3 /* MessagesViewController.swift */,
+				04058472BB9227018BD7DBBC /* Info.plist */,
+				C5BE7DDE7F67EF551D375520 /* Assets.xcassets */,
+			);
+			name = MessagesExtension;
+			path = MessagesExtension;
+			sourceTree = "<group>";
+		};
+		425DF7E3FCB56B3DCDA7015F /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B6DF988384A883712EB06EF3 /* GameHost.swift */,
+			);
+			name = Shared;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		79773EBF67157B98EACC09D0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				80E71C673B33C834166C3743 /* Coil.app */,
+				74338929181A416A9EF33DAA /* CoilMessages.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		85D0A51F22425190B2C85855 /* Web */ = {
+			isa = PBXGroup;
+			children = (
+				BF603C08A9CF145AF64DFF2E /* index.html */,
+				BF784609EB706556A296C23A /* coil.css */,
+				302D726E7C6FEF5137FEACA0 /* coil.js */,
+			);
+			name = Web;
+			path = Web;
+			sourceTree = "<group>";
+		};
+		9E56B5F9AA42A056C3CA1921 /* GameData (from the web game) */ = {
+			isa = PBXGroup;
+			children = (
+				2905D8F90B17FAADC5E9F5FF /* generator.js */,
+				CD95FFC6F2856CADB52E6A75 /* words.js */,
+				FED098B8ECA7386FC6C3A9DB /* puzzles.js */,
+			);
+			name = "GameData (from the web game)";
+			path = ..;
+			sourceTree = "<group>";
+		};
+		B090FB5142D23B2CA25F4FF6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		CCA7D7CDD997C3AEA090824A = {
+			isa = PBXGroup;
+			children = (
+				79773EBF67157B98EACC09D0 /* Products */,
+				B090FB5142D23B2CA25F4FF6 /* Frameworks */,
+				037A87100FF12E21FCE43EEC /* Config.xcconfig */,
+				425DF7E3FCB56B3DCDA7015F /* Shared */,
+				E1CBBDE61939A409DA4CB81B /* App */,
+				0B7A9F4DE13DB858CF726E96 /* MessagesExtension */,
+				85D0A51F22425190B2C85855 /* Web */,
+				9E56B5F9AA42A056C3CA1921 /* GameData (from the web game) */,
+			);
+			sourceTree = "<group>";
+		};
+		E1CBBDE61939A409DA4CB81B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				09267EB8882C2308D56A5304 /* AppDelegate.swift */,
+				2F137A08B1CBDB0689C16262 /* Info.plist */,
+				1502CB7DF8B41B4916BB1CF0 /* Assets.xcassets */,
+			);
+			name = App;
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BEF320692F30416B3BB12677 /* Coil */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 71A9E43A973C9626C1099675 /* Build configuration list for PBXNativeTarget "Coil" */;
+			buildPhases = (
+				CF78DD194565D1FD833B1052 /* Sources */,
+				7BF88B378DDFA6F98D85CB09 /* Frameworks */,
+				9D9D58313C8BB749C421748C /* Resources */,
+				5CE25E85CC0B977896F4F597 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DD5AADB0191FBB41C9495C87 /* PBXTargetDependency */,
+			);
+			name = Coil;
+			productName = Coil;
+			productReference = 80E71C673B33C834166C3743 /* Coil.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CC1DC101166B9C63FEAFBDEE /* CoilMessages */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 662FA3F6DDA19A85B5BEBDCA /* Build configuration list for PBXNativeTarget "CoilMessages" */;
+			buildPhases = (
+				CC2D9928111C7ECB911742CC /* Sources */,
+				B5A095A4A040A2FB0F704BFB /* Frameworks */,
+				9DEB978AE06269DBA4D52CC0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CoilMessages;
+			productName = CoilMessages;
+			productReference = 74338929181A416A9EF33DAA /* CoilMessages.appex */;
+			productType = "com.apple.product-type.app-extension.messages";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A4054BE53084753125ADB48B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					BEF320692F30416B3BB12677 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					CC1DC101166B9C63FEAFBDEE = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = 0328A057E44775C07B50909D /* Build configuration list for PBXProject "Coil" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CCA7D7CDD997C3AEA090824A;
+			minimizedProjectReferenceProxies = 0;
+			preferredProjectObjectVersion = 100;
+			productRefGroup = 79773EBF67157B98EACC09D0 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BEF320692F30416B3BB12677 /* Coil */,
+				CC1DC101166B9C63FEAFBDEE /* CoilMessages */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9D9D58313C8BB749C421748C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9F97DE1DFBE00346A77453A2 /* index.html in Resources */,
+				1E64539E7BA2082BAEA20C55 /* coil.css in Resources */,
+				8AE71520EEB6B2ACA4A57209 /* coil.js in Resources */,
+				56CABB135E6C02C0B3268042 /* generator.js in Resources */,
+				EEB3E265590808A8914C0331 /* words.js in Resources */,
+				1FB241A3E1628FF7B92B9DA2 /* puzzles.js in Resources */,
+				96C389DC33EC768590CF93E5 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9DEB978AE06269DBA4D52CC0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78175DB4612289392FCF1C88 /* index.html in Resources */,
+				C8C764895814477CF7F6620F /* coil.css in Resources */,
+				D33DC4305D21C2F15A6842CB /* coil.js in Resources */,
+				983FBB9C1A018A9556ACECC4 /* generator.js in Resources */,
+				FF9673EE2B0BC9BD4AE21E09 /* words.js in Resources */,
+				2E7FDF08F4EB03E817A56C58 /* puzzles.js in Resources */,
+				B22E03054632C90B2A26CB23 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CC2D9928111C7ECB911742CC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BA25A1E9882F1749C5E42D14 /* MessagesViewController.swift in Sources */,
+				218329EE39AD3B405FE7253B /* GameHost.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CF78DD194565D1FD833B1052 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BBF11E2E460202F2A0533A6C /* AppDelegate.swift in Sources */,
+				8A68BD0C9CFBED80DC50E1D0 /* GameHost.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DD5AADB0191FBB41C9495C87 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CoilMessages;
+			target = CC1DC101166B9C63FEAFBDEE /* CoilMessages */;
+			targetProxy = 8A0CCE43DA0CB2B667170545 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		15D7C3E0645D609E5BBCF134 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MessagesExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID).messages";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		24D7415E128FC539FA3B4AE4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 037A87100FF12E21FCE43EEC /* Config.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		47E8DC91A9DBAE8FBE41F6CF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		976ABE4F94190902962A4E81 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 037A87100FF12E21FCE43EEC /* Config.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EAB0D7B421178B571387C9BB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F02E6499871AD9D37C42EC51 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MessagesExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID).messages";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0328A057E44775C07B50909D /* Build configuration list for PBXProject "Coil" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				976ABE4F94190902962A4E81 /* Debug */,
+				24D7415E128FC539FA3B4AE4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		662FA3F6DDA19A85B5BEBDCA /* Build configuration list for PBXNativeTarget "CoilMessages" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F02E6499871AD9D37C42EC51 /* Release */,
+				15D7C3E0645D609E5BBCF134 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		71A9E43A973C9626C1099675 /* Build configuration list for PBXNativeTarget "Coil" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EAB0D7B421178B571387C9BB /* Release */,
+				47E8DC91A9DBAE8FBE41F6CF /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A4054BE53084753125ADB48B /* Project object */;
+}

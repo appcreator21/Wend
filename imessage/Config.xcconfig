@@ -1,0 +1,10 @@
+// The two things to make your own before the first build.
+//
+// APP_BUNDLE_ID   Any reverse-DNS id nobody else has registered. The iMessage extension uses
+//                 <APP_BUNDLE_ID>.messages automatically.
+// DEVELOPMENT_TEAM Your 10-character Apple Developer Team ID (developer.apple.com/account -> Membership details).
+//                 You can leave it empty and pick the team in Xcode instead
+//                 (each target -> Signing & Capabilities -> Team).
+
+APP_BUNDLE_ID = com.appcreator21.coil
+DEVELOPMENT_TEAM =

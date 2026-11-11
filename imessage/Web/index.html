@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Coil</title>
+<link rel="stylesheet" href="coil.css">
+</head>
+<body>
+
+<!-- Card screens: home, round intro, results, waiting. One is visible at a time. -->
+<main id="card" class="card" hidden>
+  <div class="card-inner">
+    <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 8h24v24H14V14h12v12h-6" /></svg><span>Coil</span></div>
+    <div id="score" class="score" hidden>
+      <div><small>You</small><b id="scoreMe">0</b></div>
+      <i id="scoreNote"></i>
+      <div><small>Them</small><b id="scoreThem">0</b></div>
+    </div>
+    <h1 id="cardTitle"></h1>
+    <p id="cardText"></p>
+    <div id="picker" class="picker" hidden>
+      <button data-d="easy"><b>Easy</b><small>4 words</small></button>
+      <button data-d="medium"><b>Medium</b><small>5 words</small></button>
+      <button data-d="hard"><b>Hard</b><small>6 words</small></button>
+      <button data-d="expert"><b>Expert</b><small>7 words</small></button>
+    </div>
+    <button id="cardMain" class="primary" hidden></button>
+    <button id="cardAlt" class="ghost" hidden></button>
+    <button id="howBtn" class="link">How to play</button>
+  </div>
+</main>
+
+<!-- The puzzle -->
+<main id="play" class="play" hidden>
+  <header class="bar">
+    <button id="quitBtn" class="chip" aria-label="Leave puzzle">&#x2715;</button>
+    <div class="bar-mid">
+      <span id="roundLabel" class="label"></span>
+      <span id="timer" class="timer">0:00</span>
+      <span id="target" class="label"></span>
+    </div>
+    <button id="hintBtn" class="chip">Hint</button>
+  </header>
+  <div id="boardWrap" class="board-wrap">
+    <svg id="board" class="board" role="group" aria-label="Letter grid"></svg>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+  <p id="current" class="current" aria-live="polite"></p>
+  <section id="slots" class="slots" aria-label="Words to find"></section>
+</main>
+
+<div id="resume" class="resume" hidden><button class="primary">Tap to keep playing</button></div>
+
+<dialog id="howDlg">
+  <h2>How to play</h2>
+  <ul>
+    <li>Drag through neighbouring tiles (up, down, left, right) to spell a word. Let go to lock it in.</li>
+    <li>The boxes under the board show how long each hidden word is. Every tile belongs to exactly one word.</li>
+    <li><b>Duel:</b> solve a puzzle and send it. Your opponent plays the same board against your time. Fastest wins the round, then they serve the next board back to you.</li>
+    <li>First to 3 rounds wins. A hint costs 15 seconds. Once you start a round the clock keeps running, even if you leave.</li>
+  </ul>
+  <form method="dialog"><button class="primary">Got it</button></form>
+</dialog>
+
+<script src="words.js"></script>
+<script src="puzzles.js"></script>
+<script src="generator.js"></script>
+<script src="coil.js"></script>
+</body>
+</html>
