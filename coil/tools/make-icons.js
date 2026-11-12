@@ -1,57 +1,13 @@
-// Draws the app icons: the game's own mark, a 2x2 letter board with the yellow word path running C-O-I-L,
-// zoomed to fill the icon. One drawing per look, because iOS wants three: light (the default), dark and tinted
-// (the system colours the tinted one itself, so it is grey). The Messages icon is wide, so its tiles are wide.
-// render-svg.swift (WebKit, no installs) turns each SVG into a PNG, then resize-icons.py builds the catalogs:
+// Draws every icon from one drawing: the snake mascot coiled from the ground over a faint 2x2 glass COIL grid on black.
+// Square for the home-screen app icon (default, dark and tinted) and the web apple-touch icons, wide for Messages,
+// and a bare transparent snake for the logo spot inside the app. render-svg.swift (WebKit, no installs) turns each
+// SVG into a PNG, then resize-icons.py builds the catalogs:
 //   node coil/tools/make-icons.js && python3 coil/tools/resize-icons.py
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
 const FONT = "font-family=\"ui-rounded, 'SF Pro Rounded', 'Arial Rounded MT Bold', -apple-system, sans-serif\"";
-const LOOKS = {
-  light: {
-    bg: ['#e4e9ff', '#aebaf7'], glow: ['#ffffff', 0.75], tile: ['#ffffff', '#eef0fb'], tileEdge: 'none', tileShadow: ['#2a2f7a', 0.22],
-    path: ['#ffe27a', '#ffb71c'], pathShadow: ['#8a4b00', 0.35], ink: '#1d1a52',
-  },
-  dark: {
-    bg: ['#1c1a47', '#08070f'], glow: ['#5b57ff', 0.28], tile: ['#2c2a58', '#1a1838'], tileEdge: 'rgba(255,255,255,.16)', tileShadow: ['#000000', 0.5],
-    path: ['#ffe680', '#ffb02e'], pathShadow: ['#000000', 0.45], ink: '#1b1030',
-  },
-  tinted: {
-    bg: ['#1a1a1a', '#000000'], glow: ['#ffffff', 0.0], tile: ['#4a4a4a', '#2e2e2e'], tileEdge: 'rgba(255,255,255,.2)', tileShadow: ['#000000', 0.5],
-    path: ['#ffffff', '#cfcfcf'], pathShadow: ['#000000', 0.5], ink: '#050505',
-  },
-};
-
-// w x h canvas; tw x th tiles in a 2x2 grid centred on it; the pill runs through the tile centres.
-function art(look, w, h, tw, th, gap, letterSize, marks = 'letters') {
-  const L = LOOKS[look], x0 = (w - (2 * tw + gap)) / 2, y0 = (h - (2 * th + gap)) / 2;
-  const c = (i, j) => [x0 + tw / 2 + i * (tw + gap), y0 + th / 2 + j * (th + gap)];
-  const pts = [c(0, 0), c(1, 0), c(1, 1), c(0, 1)];
-  const r = Math.min(tw, th) * 0.26, pill = Math.min(tw, th) * 0.66;
-  const tile = (i, j) => { const [cx, cy] = c(i, j); return `<rect x="${cx - tw / 2}" y="${cy - th / 2}" width="${tw}" height="${th}" rx="${r}" fill="url(#tile)" ${L.tileEdge !== 'none' ? `stroke="${L.tileEdge}" stroke-width="3"` : ''} filter="url(#tsh)"/>`; };
-  const letter = (ch, i, j) => { const [cx, cy] = c(i, j); return `<text x="${cx}" y="${cy + letterSize * 0.355}" ${FONT} font-weight="900" font-size="${letterSize}" fill="${L.ink}" text-anchor="middle">${ch}</text>`; };
-  // Without letters (the Messages icon, where the name already sits beside it): a start dot and arrows along the path.
-  const startDot = () => `<circle cx="${pts[0][0]}" cy="${pts[0][1]}" r="${pill * 0.17}" fill="${L.ink}"/>`;
-  const chevrons = () => { const a = pill * 0.15; let out = '';
-    for (let k = 1; k < pts.length; k++) {
-      const [x1, y1] = pts[k - 1], [x2, y2] = pts[k], mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = Math.sign(x2 - x1), dy = Math.sign(y2 - y1), px = -dy, py = dx;
-      out += `<polyline points="${mx - dx * a * 0.5 + px * a},${my - dy * a * 0.5 + py * a} ${mx + dx * a * 0.5},${my + dy * a * 0.5} ${mx - dx * a * 0.5 - px * a},${my - dy * a * 0.5 - py * a}" fill="none" stroke="${L.ink}" stroke-opacity=".55" stroke-width="${pill * 0.075}" stroke-linecap="round" stroke-linejoin="round"/>`;
-    } return out; };
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${L.bg[0]}"/><stop offset="1" stop-color="${L.bg[1]}"/></linearGradient>
-  <radialGradient id="glow" cx=".28" cy=".1" r=".9"><stop offset="0" stop-color="${L.glow[0]}" stop-opacity="${L.glow[1]}"/><stop offset="1" stop-color="${L.glow[0]}" stop-opacity="0"/></radialGradient>
-  <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${L.tile[0]}"/><stop offset="1" stop-color="${L.tile[1]}"/></linearGradient>
-  <linearGradient id="pill" gradientUnits="userSpaceOnUse" x1="0" y1="${y0}" x2="0" y2="${h - y0}"><stop offset="0" stop-color="${L.path[0]}"/><stop offset="1" stop-color="${L.path[1]}"/></linearGradient>
-  <filter id="tsh" filterUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}"><feDropShadow dx="0" dy="${h * 0.014}" stdDeviation="${h * 0.014}" flood-color="${L.tileShadow[0]}" flood-opacity="${L.tileShadow[1]}"/></filter>
-  <filter id="psh" filterUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}"><feDropShadow dx="0" dy="${h * 0.01}" stdDeviation="${h * 0.01}" flood-color="${L.pathShadow[0]}" flood-opacity="${L.pathShadow[1]}"/></filter>
-</defs>
-  <rect width="${w}" height="${h}" fill="url(#bg)"/><rect width="${w}" height="${h}" fill="url(#glow)"/>
-  ${tile(0, 0)}${tile(1, 0)}${tile(0, 1)}${tile(1, 1)}
-  <polyline points="${pts.map((p) => p.join(',')).join(' ')}" fill="none" stroke="url(#pill)" stroke-width="${pill}" stroke-linecap="round" stroke-linejoin="round" filter="url(#psh)"/>
-  ${marks === 'letters' ? letter('C', 0, 0) + letter('O', 1, 0) + letter('I', 1, 1) + letter('L', 0, 1) : startDot() + chevrons()}
-</svg>`;
-}
 
 // The mascot: a snake coiled from the ground, body rising out of the coil, head up top. The body is a run of circles
 // along a helix, drawn back to front so the coils overlap properly; it grows from a thin tail to a thick body and
@@ -125,10 +81,12 @@ function snake(kind) {
 }
 
 const jobs = [
-  ['icon-1024.png', art('light', 1024, 1024, 384, 384, 22, 276)],
-  ['icon-1024-dark.png', art('dark', 1024, 1024, 384, 384, 22, 276)],
-  ['icon-1024-tinted.png', art('tinted', 1024, 1024, 384, 384, 22, 276)],
-  // Messages: a 4:3 canvas, so wide tiles instead of squares. Same look as the dark icon, which reads on light and dark.
+  // The home-screen icon is the snake logo in all three looks: it is already dark, so default and dark match,
+  // and resize-icons.py turns the tinted one grey (iOS colours it).
+  ['icon-1024.png', snake('square')],
+  ['icon-1024-dark.png', snake('square')],
+  ['icon-1024-tinted.png', snake('square')],
+  // Messages: a 4:3 canvas.
   ['icon-1024x768.png', snake('wide')],
   ['snake-1024.png', snake('square')],
   ['snake-mark.png', snake('mark'), true],

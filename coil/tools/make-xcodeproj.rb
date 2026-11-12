@@ -16,7 +16,7 @@ project.build_configurations.each do |c|
   c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = deployment
   c.build_settings['SWIFT_VERSION'] = '5.0'
   c.build_settings['MARKETING_VERSION'] = '1.6'
-  c.build_settings['CURRENT_PROJECT_VERSION'] = '7'
+  c.build_settings['CURRENT_PROJECT_VERSION'] = '8'
 end
 
 app = project.new_target(:application, 'Coil', :ios, deployment, nil, :swift)
@@ -51,7 +51,7 @@ common = {
   'SWIFT_VERSION' => '5.0',
   'IPHONEOS_DEPLOYMENT_TARGET' => deployment,
   'MARKETING_VERSION' => '1.6',
-  'CURRENT_PROJECT_VERSION' => '7',
+  'CURRENT_PROJECT_VERSION' => '8',
 }
 app.build_configurations.each do |c|
   c.build_settings.delete('ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME')
