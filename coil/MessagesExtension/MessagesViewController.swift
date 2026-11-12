@@ -11,14 +11,47 @@ final class MessagesViewController: MSMessagesAppViewController, GameHostDelegat
         return host
     }()
 
+    private let claim = TouchClaimGesture()
+    private var tamed = Set<ObjectIdentifier>()
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        host.attach(to: view, anchored: true)
-        // Dragging a word down the board must not read as pulling the sheet closed: claim every touch the
-        // moment it lands, so the game owns the drag. The sheet is still closed from its top bar.
-        let claim = TouchClaimGesture()
+        host.attach(to: view)
+        // Dragging a word down the board must not read as pulling the Messages sheet closed. The sheet resizes
+        // with a pan recognizer (a UIDropShadowView's, driven by _UISheetInteraction); ours claims every touch
+        // the moment it lands, and the sheet's has to wait for ours to fail, which it never does. The top
+        // pill is outside this view, so the sheet still closes from there.
         claim.delegate = self
         host.webView.addGestureRecognizer(claim)
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        tameSheetGestures()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        tameSheetGestures()
+    }
+
+    override func didTransition(to presentationStyle: MSMessagesAppPresentationStyle) {
+        super.didTransition(to: presentationStyle)
+        tameSheetGestures()
+    }
+
+    /// Makes every pan recognizer above the game wait for the touch claim. Run again after each layout and
+    /// presentation change: Messages swaps the sheet's recognizer when it goes between compact and expanded.
+    private func tameSheetGestures() {
+        var ancestor: UIView? = view
+        while let current = ancestor {
+            for recognizer in current.gestureRecognizers ?? [] where recognizer !== claim && recognizer is UIPanGestureRecognizer {
+                if tamed.insert(ObjectIdentifier(recognizer)).inserted {
+                    recognizer.require(toFail: claim)
+                }
+            }
+            ancestor = current.superview
+        }
     }
 
     // MARK: - Conversation
@@ -134,3 +167,4 @@ final class TouchClaimGesture: UIGestureRecognizer {
         state = .cancelled
     }
 }
+

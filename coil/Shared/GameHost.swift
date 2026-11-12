@@ -55,37 +55,25 @@ final class GameHost: NSObject, WKScriptMessageHandler {
     }
 
     /// Fills `view` with the game: the safe area inside Messages, edge to edge in the app (the page pads for the notch itself).
-    /// - Parameter anchored: wrap the web view in a scroll view that is parked mid-way through a very tall, invisible
-    ///   page. Inside the Messages sheet a downward drag on content that is not a scroll view pulls the whole sheet
-    ///   closed; a scroll view that is not at its top edge keeps the drag for itself, so a word can be traced downwards.
-    func attach(to view: UIView, fullBleed: Bool = false, anchored: Bool = false) {
+    func attach(to view: UIView, fullBleed: Bool = false) {
         view.backgroundColor = GameHost.background
         webView.translatesAutoresizingMaskIntoConstraints = false
-
-        var top = view.safeAreaLayoutGuide.topAnchor, bottom = view.safeAreaLayoutGuide.bottomAnchor
-        var leading = view.safeAreaLayoutGuide.leadingAnchor, trailing = view.safeAreaLayoutGuide.trailingAnchor
-        if fullBleed { (top, bottom, leading, trailing) = (view.topAnchor, view.bottomAnchor, view.leadingAnchor, view.trailingAnchor) }
-
-        guard anchored else {
-            view.addSubview(webView)
+        view.addSubview(webView)
+        if fullBleed {
             NSLayoutConstraint.activate([
-                webView.topAnchor.constraint(equalTo: top), webView.bottomAnchor.constraint(equalTo: bottom),
-                webView.leadingAnchor.constraint(equalTo: leading), webView.trailingAnchor.constraint(equalTo: trailing),
+                webView.topAnchor.constraint(equalTo: view.topAnchor),
+                webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             ])
             return
         }
-        let anchor = AnchorScrollView()
-        anchor.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(anchor)
-        anchor.addSubview(webView)
+        let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            anchor.topAnchor.constraint(equalTo: top), anchor.bottomAnchor.constraint(equalTo: bottom),
-            anchor.leadingAnchor.constraint(equalTo: leading), anchor.trailingAnchor.constraint(equalTo: trailing),
-            // Pinned to the frame guide, the web view stays put on screen however far the scroll view is dragged.
-            webView.topAnchor.constraint(equalTo: anchor.frameLayoutGuide.topAnchor),
-            webView.bottomAnchor.constraint(equalTo: anchor.frameLayoutGuide.bottomAnchor),
-            webView.leadingAnchor.constraint(equalTo: anchor.frameLayoutGuide.leadingAnchor),
-            webView.trailingAnchor.constraint(equalTo: anchor.frameLayoutGuide.trailingAnchor),
+            webView.topAnchor.constraint(equalTo: guide.topAnchor),
+            webView.bottomAnchor.constraint(equalTo: guide.bottomAnchor),
+            webView.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
         ])
     }
 
@@ -207,55 +195,5 @@ extension GameHost {
         }
         message.layout = layout
         return message
-    }
-}
-
-// MARK: - Sheet anchor
-
-/// An invisible, very tall scroll view parked in the middle of its content. It never shows anything moving: the
-/// game sits on top of it, pinned to its frame. Its only job is to be a scroll view that is not at its top edge.
-final class AnchorScrollView: UIScrollView, UIScrollViewDelegate, UIGestureRecognizerDelegate {
-    private let span: CGFloat = 21
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        backgroundColor = .clear
-        contentInsetAdjustmentBehavior = .never
-        showsVerticalScrollIndicator = false
-        showsHorizontalScrollIndicator = false
-        bounces = false
-        isDirectionalLockEnabled = true
-        // The game must keep every touch, even while this view starts to scroll.
-        delaysContentTouches = false
-        canCancelContentTouches = false
-        delegate = self
-    }
-
-    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        guard bounds.height > 0 else { return }
-        let size = CGSize(width: bounds.width, height: bounds.height * span)
-        if contentSize != size {
-            contentSize = size
-            recentre()
-        }
-    }
-
-    private func recentre() {
-        setContentOffset(CGPoint(x: 0, y: bounds.height * (span - 1) / 2), animated: false)
-    }
-
-    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-        if !decelerate { recentre() }
-    }
-
-    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { recentre() }
-
-    /// The scroll view's own pan must not make the page's touch handling give up.
-    @objc func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
-                                 shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-        return true
     }
 }

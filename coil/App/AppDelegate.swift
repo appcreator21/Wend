@@ -39,8 +39,7 @@ final class GameViewController: UIViewController, GameHostDelegate, MFMessageCom
     override func viewDidLoad() {
         super.viewDidLoad()
         host.delegate = self
-        // -anchored lets the Messages sheet's scroll-view trick be tried in the app, where it can be driven from a simulator.
-        host.attach(to: view, fullBleed: true, anchored: ProcessInfo.processInfo.arguments.contains("-anchored"))
+        host.attach(to: view, fullBleed: true)
         host.send(["type": "open", "style": "expanded"])
     }
 
