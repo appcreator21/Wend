@@ -42,7 +42,8 @@ function snake(kind) {
   // Fit the whole snake (shadow, coil, tongue) to the canvas: centred, as large as the margins allow.
   const bx0 = Math.min(...all.map((p) => p.x - p.d / 2)), bx1 = Math.max(hx + 215, ...all.map((p) => p.x + p.d / 2));
   const by0 = hy - 86, by1 = baseY + ry + 50;
-  const fit = Math.min((w * (bare ? 0.96 : 0.7)) / (bx1 - bx0), (h * (bare ? 0.96 : 0.74)) / (by1 - by0));
+  const alone = bare || kind === 'wide';   // no tiles behind it, so it can fill more of the canvas
+  const fit = Math.min((w * (bare ? 0.96 : alone ? 0.82 : 0.7)) / (bx1 - bx0), (h * (bare ? 0.96 : alone ? 0.9 : 0.74)) / (by1 - by0));
   const place = `translate(${cx - fit * (bx0 + bx1) / 2} ${h / 2 - fit * (by0 + by1) / 2}) scale(${fit})`;
   // The COIL letters sit behind the snake in a 2x2 grid that fills the icon: faint glass blocks, fainter glass letters.
   const gw = square ? 384 : 470, gh = square ? 384 : 346, gg = 22, gx0 = (w - (2 * gw + gg)) / 2, gy0 = (h - (2 * gh + gg)) / 2, rx = Math.min(gw, gh) * 0.26;
@@ -62,7 +63,7 @@ function snake(kind) {
   <filter id="blur" filterUnits="userSpaceOnUse" x="-300" y="-300" width="${w + 600}" height="${h + 600}"><feGaussianBlur stdDeviation="22"/></filter>
 </defs>
   ${bare ? '' : `<rect width="${w}" height="${h}" fill="url(#bg)"/><rect width="${w}" height="${h}" fill="url(#glow)"/>`}
-  ${bare ? '' : tileSet}
+  ${bare || kind === 'wide' ? '' : tileSet}   <!-- the wide Messages icon is the snake alone -->
   <g transform="${place}">
     ${bare ? '' : `<ellipse cx="${cx}" cy="${baseY + ry + 14}" rx="${350}" ry="${44}" fill="#000" fill-opacity=".55" filter="url(#blur)"/>`}
     ${all.map(draw).join('')}
@@ -86,7 +87,7 @@ const jobs = [
   ['icon-1024.png', snake('square')],
   ['icon-1024-dark.png', snake('square')],
   ['icon-1024-tinted.png', snake('square')],
-  // Messages: a 4:3 canvas.
+  // Messages: a 4:3 canvas, the snake alone (the app name already sits beside the icon).
   ['icon-1024x768.png', snake('wide')],
   ['snake-1024.png', snake('square')],
   ['snake-mark.png', snake('mark'), true],
