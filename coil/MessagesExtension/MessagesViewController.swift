@@ -82,6 +82,10 @@ final class MessagesViewController: MSMessagesAppViewController, GameHostDelegat
     }
 
     private func open(_ message: MSMessage?, in conversation: MSConversation, live: Bool) {
+        #if DEBUG
+        let remote = conversation.remoteParticipantIdentifiers
+        Diag.write("open live=\(live) message=\(message != nil) sender=\(String(describing: message?.senderParticipantIdentifier)) local=\(conversation.localParticipantIdentifier) remote=\(remote.map { $0.uuidString }) senderIsLocal=\(message?.senderParticipantIdentifier == conversation.localParticipantIdentifier)")
+        #endif
         var event: [String: Any] = ["type": "open", "style": name(of: presentationStyle), "live": live]
         if let url = message?.url,
            let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
@@ -180,3 +184,19 @@ final class TouchClaimGesture: UIGestureRecognizer {
     }
 }
 
+
+#if DEBUG
+/// Debug trace, appended to Documents/diag.log in the extension's container (pulled over USB while testing).
+enum Diag {
+    private static let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("diag.log")
+    static func write(_ text: String) {
+        let line = String(format: "%.3f ", Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 100000)) + text + "\n"
+        guard let data = line.data(using: .utf8) else { return }
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile(); handle.write(data); try? handle.close()
+        } else {
+            try? data.write(to: url)
+        }
+    }
+}
+#endif

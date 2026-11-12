@@ -12,6 +12,7 @@
   const Gen = window.WendGen;
   const $ = (id) => document.getElementById(id);
   const PENALTY = 15;      // seconds added per hint
+  const SHOW_TARGET = false; // show the time to beat before the round is played? Off: both times appear once you finish.
   const TARGET_WINS = 3;   // first to this many rounds wins the duel
   const CELL = 100;
   const NAMES = { easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' };
@@ -80,7 +81,7 @@
       const okScore = Array.isArray(o.s) && o.s.length === 2 && o.s.every((x) => Number.isInteger(x) && x >= 0 && x < 100);
       if (o.v !== 1 || typeof o.id !== 'string' || !Number.isInteger(o.rd) || o.rd < 1 || (o.by !== 0 && o.by !== 1) || !okScore || !(o.to >= 1 && o.to <= 9)) return null;
       if (o.last && !(Array.isArray(o.last.t) && o.last.t.length === 2)) return null;
-      if (o.over) return o;
+      if (o.over && o.l === undefined) return o;   // an older final message has no board
       const { r, c, l, p } = o;
       if (!(r >= 3 && r <= 12 && c >= 3 && c <= 12) || typeof l !== 'string' || l.length !== r * c || !/^[A-Z_]+$/.test(l) || !Array.isArray(p) || p.length < 2 || p.length > 12) return null;
       const seen = new Set(), lens = new Set(), solution = [];
@@ -94,7 +95,7 @@
         solution.push({ word: cells.map((x) => l[x]).join(''), path: cells });
       }
       if (seen.size !== l.replace(/_/g, '').length) return null;
-      if (!(o.t >= 0 && o.t < 864000)) return null;
+      if (!o.over && !(o.t >= 0 && o.t < 864000)) return null;
       o.puzzle = { rows: r, cols: c, letters: l.split('').map((x) => (x === '_' ? null : x)), lengths: [...lens].sort((a, b) => a - b), solution, difficulty: NAMES[o.d] ? o.d : 'medium' };
       return o;
     } catch (e) { return null; }
@@ -233,14 +234,15 @@
   function intro(P, rec) {
     const running = rec.start && rec.start[P.rd];
     card({ screen: 'intro', score: P.s, title: 'Round ' + P.rd,
-      stat: [['Time to beat', fmt(P.t), NAMES[P.puzzle.difficulty] + ' \u00b7 ' + P.puzzle.cols + '\u00d7' + P.puzzle.rows]],
-      lead: 'They solved this ' + NAMES[P.puzzle.difficulty] + ' board in ' + fmt(P.t) + '.',
-      text: running ? 'Your clock is already running!' : 'Beat that to win the round. The clock starts when you tap Play.',
+      stat: [SHOW_TARGET ? ['Time to beat', fmt(P.t), NAMES[P.puzzle.difficulty] + ' \u00b7 ' + P.puzzle.cols + '\u00d7' + P.puzzle.rows]
+                         : ['Their board', NAMES[P.puzzle.difficulty], P.puzzle.cols + '\u00d7' + P.puzzle.rows]],
+      lead: SHOW_TARGET ? 'They solved this ' + NAMES[P.puzzle.difficulty] + ' board in ' + fmt(P.t) + '.' : 'They finished this ' + NAMES[P.puzzle.difficulty] + ' board. Can you be faster?',
+      text: running ? 'Your clock is already running!' : SHOW_TARGET ? 'Beat that to win the round. The clock starts when you tap Play.' : 'Solve it faster than they did. The clock starts when you tap Play, and you see both times when you finish.',
       main: [running ? 'Continue' : 'Play', () => {
         const r = loadRec(P.id);
         r.start = r.start || {};
         if (!r.start[P.rd]) { r.start[P.rd] = Date.now(); saveRec(P.id, r); }
-        startGame(P.puzzle, 'answer', { startAt: r.start[P.rd], target: P.t, label: 'Round ' + P.rd });
+        startGame(P.puzzle, 'answer', { startAt: r.start[P.rd], target: SHOW_TARGET ? P.t : 0, label: 'Round ' + P.rd });
       }] });
   }
 
@@ -280,7 +282,7 @@
     }
     card({ screen: 'waiting', score: duel.s, title: 'Their turn',
       text: ENV === 'messages' ? (rec.inserted ? 'If the message is still in the text field, tap the send arrow.\nYou get the next board when they have played.' : 'Sent. You get the next board when they have played.') : 'Waiting for the other player.',
-      alt: rec.out ? ['Put the message back', send] : null });
+      alt: rec.out && (ENV !== 'messages' || rec.inserted) ? ['Put the message back', send] : null });
   }
 
   function over(P) {
@@ -311,10 +313,10 @@
     const rec = loadRec(duel.id), P = unpack(rec.out);
     if (!P) return;
     const a = P.s[P.by], b = P.s[1 - P.by];
-    const line = a > b ? '{me} leads ' + a + '–' + b : a < b ? '{me} trails ' + a + '–' + b : a ? 'Tied ' + a + '–' + b : 'New duel';
-    const msg = P.over
-      ? { caption: a > b ? '{me} wins the duel ' + a + '–' + b : '{me} loses the duel ' + a + '–' + b, subcaption: 'Tap for a rematch', summary: 'Coil: the duel is over' }
-      : { caption: 'Round ' + P.rd + ': beat ' + fmt(P.t), subcaption: line + ' · ' + NAMES[P.puzzle.difficulty], summary: 'Coil: your turn' };
+    const line = a > b ? '{me} leads ' + a + '–' + b : a < b ? '{me} trails ' + a + '–' + b : a || P.rd > 1 ? 'Tied ' + a + '–' + b : 'New duel';
+    // Like GamePigeon the bubble is just a picture: the scene on top and the shouted caption (YOUR TURN!, YOU WON!...) in a
+    // strip along the bottom. The text for the notification and accessibility goes in the summary.
+    const msg = P.over ? { summary: b > a ? 'Coil: you won!' : 'Coil: you lost!' } : { summary: 'Coil: your turn' };
     sending = duel.id;
     Host.post(Object.assign(msg, { type: 'send', match: rec.out, image: bubbleImage(P), newSession: !!rec.fresh, auto: auto === true }));
   }
@@ -343,34 +345,145 @@
     if (P.over) { duel.P = P; over(P); $('cardText').textContent = ev.inserted ? 'Result ready. Tap the send arrow to deliver it.' : 'Result sent.'; } else waiting();
   }
 
-  // The picture in the message bubble: the shape of the board (no letters, so nobody gets a head start) and the time to beat.
+  // The finished board as the game draws it when a round is solved (see render()), but on a canvas: tinted regions,
+  // a coloured path per word with its start ring, direction arrows, tick badges and the letters. Centred on cx, cy.
+  function drawFinishedBoard(ctx, p, cx, cy, maxSize, blank) {   // blank: the empty board, no words, paths or letters
+    const FR = 6, C = 100, bw = p.cols * C + 2 * FR, bh = p.rows * C + 2 * FR, s = Math.min(maxSize / bw, maxSize / bh);
+    const colour = new Map(); p.lengths.forEach((len, k) => colour.set(len, HEX[k % HEX.length]));
+    const owner = new Map(); p.solution.forEach((w) => w.path.forEach((i) => owner.set(i, colour.get(w.word.length))));
+    const px = (i) => (i % p.cols) * C + C / 2, py = (i) => Math.floor(i / p.cols) * C + C / 2;
+    const rect = (x, y, w, h, r) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); };
+    ctx.save(); ctx.translate(cx - bw * s / 2, cy - bh * s / 2); ctx.scale(s, s);
+    ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 40 / s * 0.5; ctx.shadowOffsetY = 12;
+    rect(0, 0, bw, bh, 26 + FR); ctx.fillStyle = blank ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.16)'; ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = 'rgba(255,255,255,.13)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.translate(FR, FR);
+    ctx.save(); rect(0, 0, p.cols * C, p.rows * C, 26); ctx.clip();
+    const key = (i) => (!p.letters[i] ? 'b' : owner.has(i) ? owner.get(i) : 'u');
+    p.letters.forEach((ch, i) => {
+      const r = Math.floor(i / p.cols), c = i % p.cols, mine = key(i), inset = 2;
+      const diff = (rr, cc) => rr >= 0 && rr < p.rows && cc >= 0 && cc < p.cols && key(rr * p.cols + cc) !== mine;
+      const l = diff(r, c - 1) ? inset : 0, rt = diff(r, c + 1) ? inset : 0, t = diff(r - 1, c) ? inset : 0, b = diff(r + 1, c) ? inset : 0;
+      const x = c * C + l, y = r * C + t, w = C - l - rt, h = C - t - b;
+      if (!ch) { ctx.fillStyle = blank ? 'rgba(0,0,20,.5)' : 'rgba(0,0,0,.38)'; ctx.fillRect(x, y, w, h); ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); ctx.strokeStyle = blank ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.05)'; ctx.lineWidth = 5;
+        for (let d = -C; d < 2 * C; d += 14) { ctx.beginPath(); ctx.moveTo(x + d, y + h); ctx.lineTo(x + d + h, y); ctx.stroke(); } ctx.restore(); return; }
+      ctx.fillStyle = blank ? 'rgba(255,255,255,.26)' : 'rgba(255,255,255,.085)'; ctx.fillRect(x, y, w, h);
+      if (owner.has(i) && !blank) { ctx.globalAlpha = 0.22; ctx.fillStyle = owner.get(i); ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1; }
+    });
+    ctx.restore();
+    if (blank) { ctx.restore(); return; }
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    p.solution.forEach((w) => {
+      const col = colour.get(w.word.length);
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 64;
+      ctx.beginPath(); w.path.forEach((i, k) => (k ? ctx.lineTo(px(i), py(i)) : ctx.moveTo(px(i), py(i)))); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px(w.path[0]), py(w.path[0]), 33, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 3; ctx.stroke();
+    });
+    p.solution.forEach((w) => {
+      ctx.strokeStyle = 'rgba(16,16,20,.5)'; ctx.lineWidth = 5;
+      for (let k = 1; k < w.path.length; k++) {
+        const a = w.path[k - 1], b = w.path[k], mx = (px(a) + px(b)) / 2, my = (py(a) + py(b)) / 2, dx = Math.sign(px(b) - px(a)), dy = Math.sign(py(b) - py(a)), qx = -dy, qy = dx;
+        ctx.beginPath(); ctx.moveTo(mx - dx * 5 + qx * 11, my - dy * 5 + qy * 11); ctx.lineTo(mx + dx * 7, my + dy * 7); ctx.lineTo(mx - dx * 5 - qx * 11, my - dy * 5 - qy * 11); ctx.stroke();
+      }
+    });
+    p.solution.forEach((w) => {
+      const a = w.path[0], b = w.path[1], dx = Math.sign(px(b) - px(a)), dy = Math.sign(py(b) - py(a)), bx = px(a) + (dx ? -dx * 30 : 30), by = py(a) + (dx ? -30 : -dy * 30);
+      ctx.beginPath(); ctx.arc(bx, by, 15, 0, Math.PI * 2); ctx.fillStyle = '#08080d'; ctx.fill(); ctx.strokeStyle = colour.get(w.word.length); ctx.lineWidth = 5; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx - 7, by); ctx.lineTo(bx - 2, by + 5); ctx.lineTo(bx + 7, by - 5); ctx.strokeStyle = '#32d74b'; ctx.lineWidth = 6; ctx.stroke();
+    });
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#101014'; ctx.font = '700 46px ui-rounded, -apple-system, system-ui, sans-serif';
+    p.letters.forEach((ch, i) => { if (ch) ctx.fillText(ch, px(i), py(i) + 2); });
+    ctx.restore();
+  }
+
+  // ---------- message pictures ----------
+  // Every bubble is a picture, like GamePigeon's (Messages draws the app icon in the corner itself): the snake beside a filled board for a turn (a different board, so no letters
+  // so nobody gets a head start) and the finished board with a crown or X over it for the end of the duel.
+  // The crown and X for the end-of-duel picture are real artwork (tools/result-art), embedded in coil.css. The hand-drawn
+  // crown() and cross() below are only a fallback in case an image has not loaded.
+  const cssImage = (name) => { const im = new Image(), m = /url\(["']?([^"')]+)["']?\)/.exec(getComputedStyle(document.documentElement).getPropertyValue(name)); if (m) im.src = m[1]; return im; };
+  const crownImg = cssImage('--crown'), crossImg = cssImage('--cross');
+  const mascot = new Image();
+  (function () { const m = /url\(["']?([^"')]+)["']?\)/.exec(getComputedStyle(document.documentElement).getPropertyValue('--mark')); if (m) mascot.src = m[1]; })();
+
+  // A sticker-style mark: black outline, white outline, then the colour (the crown and X from GamePigeon's end screens).
+  function sticker(ctx, trace, fillStyle, scale, outline) {
+    ctx.save(); ctx.scale(scale, scale); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 26; ctx.shadowOffsetY = 12;
+    trace(); ctx.strokeStyle = '#000'; ctx.lineWidth = outline + 30; ctx.stroke(); ctx.shadowColor = 'transparent';
+    trace(); ctx.strokeStyle = '#fff'; ctx.lineWidth = outline + 12; ctx.stroke();
+    trace(); ctx.strokeStyle = fillStyle; ctx.lineWidth = outline - 4; ctx.stroke();
+    ctx.restore();
+  }
+  function crown(ctx, cx, cy, size) {
+    // Coordinates are from a zoomed GamePigeon crown (about 700 wide), scaled to `size`.
+    const k = size / 700; ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.translate(-520, -370);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const ball = (x, y, r) => { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); };
+    const bump = (x) => { ball(x, 285, 38); ctx.moveTo(x - 36, 300); ctx.lineTo(x + 36, 300); ctx.lineTo(x + 48, 420); ctx.lineTo(x - 48, 420); ctx.closePath(); };
+    const front = () => {
+      ctx.moveTo(222, 262); ctx.lineTo(258, 585); ctx.quadraticCurveTo(520, 668, 775, 585); ctx.lineTo(822, 262); ctx.lineTo(748, 302); ctx.lineTo(612, 428);
+      ctx.lineTo(552, 225); ctx.lineTo(480, 225); ctx.lineTo(428, 428); ctx.lineTo(296, 302); ctx.closePath();
+      ball(245, 232, 52); ball(515, 168, 52); ball(792, 236, 52);
+    };
+    const all = () => { ctx.beginPath(); bump(385); bump(655); front(); };
+    ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 18;
+    all(); ctx.strokeStyle = '#000'; ctx.lineWidth = 92; ctx.stroke(); ctx.shadowColor = 'transparent';
+    all(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 70; ctx.stroke();
+    ctx.beginPath(); bump(385); bump(655); ctx.fillStyle = '#a3a02a'; ctx.fill(); ctx.strokeStyle = '#4f4d12'; ctx.lineWidth = 7; ctx.stroke();
+    const y = ctx.createLinearGradient(0, 130, 0, 650); y.addColorStop(0, '#fbec55'); y.addColorStop(1, '#f1d100');
+    ctx.beginPath(); front(); ctx.fillStyle = y; ctx.fill(); ctx.strokeStyle = '#a89200'; ctx.lineWidth = 7; ctx.stroke();
+    ctx.restore();
+  }
+  function cross(ctx, cx, cy, size) {
+    const k = size / 300; ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k);
+    const red = ctx.createLinearGradient(0, -140, 0, 140); red.addColorStop(0, '#ff6a58'); red.addColorStop(1, '#d92a20');
+    const trace = () => { ctx.beginPath(); ctx.moveTo(-95, -95); ctx.lineTo(95, 95); ctx.moveTo(95, -95); ctx.lineTo(-95, 95); };
+    sticker(ctx, trace, red, 1, 72);
+    ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 12; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-100, -108); ctx.lineTo(-30, -38); ctx.moveTo(100, -108); ctx.lineTo(30, -38); ctx.stroke();
+    ctx.restore();
+  }
+
   function bubbleImage(P) {
     try {
-      const W = 900, H = 600, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const W = 900, H = 560, CAP = 112, cx = W / 2, cy = H / 2 + 6, cv = document.createElement('canvas'); cv.width = W; cv.height = H + CAP;
       const ctx = cv.getContext('2d');
-      const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#1c2250'); g.addColorStop(1, '#08080d');
+      const rr = (x, y, w, h, r) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); };
+      const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#2d2a86'); g.addColorStop(0.55, '#16134a'); g.addColorStop(1, '#07060f');
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      const rr = (x, y, w, h, r) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); ctx.fill(); };
-      const font = (w, s) => w + ' ' + s + 'px -apple-system, system-ui, sans-serif';
+      const glow = ctx.createRadialGradient(cx, cy, 30, cx, cy, 430); glow.addColorStop(0, 'rgba(120,96,255,.38)'); glow.addColorStop(1, 'rgba(120,96,255,0)');
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       if (P.over) {
-        ctx.fillStyle = '#8e8e93'; ctx.font = font(700, 54); ctx.fillText('DUEL OVER', W / 2, 170);
-        ctx.fillStyle = '#ffd60a'; ctx.font = font(800, 220); ctx.fillText(Math.max(P.s[0], P.s[1]) + '–' + Math.min(P.s[0], P.s[1]), W / 2, 350);
+        const won = P.s[1 - P.by] > P.s[P.by];   // the result for the person it is sent to
+        if (P.puzzle) drawFinishedBoard(ctx, P.puzzle, cx, cy, 500);
+        const art = won ? crownImg : crossImg;
+        if (art.complete && art.naturalWidth) {
+          const w = won ? 340 : 270, h = w * art.naturalHeight / art.naturalWidth;
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 12; ctx.drawImage(art, cx - w / 2, cy - h / 2, w, h); ctx.restore();
+        } else (won ? crown : cross)(ctx, cx, cy, won ? 300 : 250);
       } else {
-        const p = P.puzzle, size = 440, cell = size / Math.max(p.rows, p.cols), ox = 60, oy = (H - cell * p.rows) / 2;
-        p.letters.forEach((ch, i) => {
-          if (!ch) return;
-          ctx.fillStyle = HEX[(i * 7 + (i % p.cols)) % HEX.length]; ctx.globalAlpha = 0.9;
-          rr(ox + (i % p.cols) * cell + cell * 0.06, oy + Math.floor(i / p.cols) * cell + cell * 0.06, cell * 0.88, cell * 0.88, cell * 0.2);
-        });
-        ctx.globalAlpha = 1;
-        const tx = 60 + size + (W - size - 60) / 2;
-        ctx.fillStyle = '#8e8e93'; ctx.font = font(700, 46); ctx.fillText('ROUND ' + P.rd, tx, 170);
-        ctx.fillStyle = '#ffffff'; ctx.font = font(600, 50); ctx.fillText('Beat', tx, 260);
-        ctx.fillStyle = '#ffd60a'; ctx.font = font(800, 130); ctx.fillText(fmt(P.t), tx, 360);
-        ctx.fillStyle = '#8e8e93'; ctx.font = font(600, 40); ctx.fillText(NAMES[p.difficulty], tx, 460);
+        // A finished board of the same level (a different, ready-made one: the real board's letters stay hidden), with the snake beside it.
+        const p = P.puzzle, show = fromPool(p.difficulty);
+        drawFinishedBoard(ctx, show || p, cx + 150, cy, 440, !show);
+        if (mascot.complete && mascot.naturalWidth) {
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 14;
+          ctx.drawImage(mascot, 24, H - 400, 390, 390); ctx.restore();
+        }
+        // Difficulty, top right.
+        const label = NAMES[p.difficulty].toUpperCase(); ctx.font = '800 34px -apple-system, system-ui, sans-serif';
+        const lw = ctx.measureText(label).width + 52; ctx.fillStyle = 'rgba(0,0,0,.38)'; rr(W - 36 - lw, 34, lw, 64, 32); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillText(label, W - 36 - lw / 2, 67);
       }
-      return cv.toDataURL('image/jpeg', 0.85);
+      // The caption strip.
+      const first = P.rd === 1 && !P.last, caption = P.over ? (P.s[1 - P.by] > P.s[P.by] ? 'YOU WON!' : 'YOU LOST!') : first ? 'LET\u2019S PLAY COIL!' : 'YOUR TURN!';
+      ctx.fillStyle = '#f3f3f5'; ctx.fillRect(0, H, W, CAP);
+      ctx.fillStyle = '#3a3a3c'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '800 64px "Avenir Next", Avenir, "Helvetica Neue", system-ui, sans-serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '-3px';
+      ctx.fillText(caption, cx, H + (P.over ? CAP / 2 + 2 : 50));
+      if (!P.over) { ctx.font = '700 28px -apple-system, system-ui, sans-serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '0px'; ctx.fillStyle = '#6e6e73'; ctx.fillText('Round ' + P.rd + ' \u00b7 ' + NAMES[P.puzzle.difficulty], cx, H + 90); }
+      return cv.toDataURL('image/jpeg', 0.9);
     } catch (e) { return null; }
   }
 
@@ -645,7 +758,7 @@
       const t = [0, 0]; t[me] = time; t[1 - me] = P.t;
       const rec = loadRec(duel.id);
       rec.answered = P.rd; rec.s = s; rec.last = { rd: P.rd, t }; rec.out = null; rec.sent = false;
-      if (Math.max(s[0], s[1]) >= P.to) rec.out = pack({ v: 1, id: duel.id, rd: P.rd, by: me, s, to: P.to, last: rec.last, over: 1 });
+      if (Math.max(s[0], s[1]) >= P.to) rec.out = pack(Object.assign({ v: 1, id: duel.id, rd: P.rd, by: me, s, to: P.to, last: rec.last, over: 1 }, puzzleFields(g.puzzle)));
       saveRec(duel.id, rec);
       duel.s = s; duel.last = rec.last;
     } else if (g.kind === 'serve') {
@@ -776,7 +889,7 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 
   // Test hook (coil/tools/test-duel.js)
-  window.__coil = { get game() { return game; }, get screen() { return S.screen; }, get duel() { return duel; }, unpack };
+  window.__coil = { bubbleImage, get game() { return game; }, get screen() { return S.screen; }, get duel() { return duel; }, unpack };
 
   setStyle(params.get('style') || 'expanded');
   Host.post({ type: 'ready' });

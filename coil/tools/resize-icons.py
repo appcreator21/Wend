@@ -67,8 +67,8 @@ for size, name in ((180, 'apple-touch-icon.png'), (167, 'apple-touch-icon-167.pn
     mascot.resize((size, size), Image.LANCZOS).save(os.path.join(web_icons, name))
 print('wrote 3 apple-touch icons')
 
-# The app's own logo spots (Web/coil.css): the snake alone where the yellow spiral used to be, and the full icon on
-# the home screen. Embedded as data URIs so no new files have to be added to the Xcode project.
+# The app's own logo spots (Web/coil.css): the snake alone where the yellow spiral used to be, the full icon on
+# the home screen, and the crown and X that go over the finished board in the end-of-duel message (tools/result-art). Embedded as data URIs so no new files have to be added to the Xcode project.
 import base64, io, re
 def data_uri(image):
     buf = io.BytesIO(); image.save(buf, 'PNG', optimize=True)
@@ -78,11 +78,13 @@ snake = snake.crop(snake.getbbox())
 side = max(snake.size)
 square_mark = Image.new('RGBA', (side, side), (0, 0, 0, 0))
 square_mark.paste(snake, ((side - snake.size[0]) // 2, (side - snake.size[1]) // 2))
-mark = data_uri(square_mark.resize((160, 160), Image.LANCZOS))
+mark = data_uri(square_mark.resize((360, 360), Image.LANCZOS))
 hero = data_uri(mascot.resize((300, 300), Image.LANCZOS))
 css_path = os.path.join(root, 'Web', 'coil.css')
 css = open(css_path).read()
-block = '/* logo:start (written by tools/resize-icons.py) */\n:root { --mark: url(%s); --hero-logo: url(%s); }\n/* logo:end */' % (mark, hero)
+crown = data_uri(Image.open(os.path.join(here, 'result-art', 'crown.png')).convert('RGBA'))
+cross = data_uri(Image.open(os.path.join(here, 'result-art', 'cross.png')).convert('RGBA'))
+block = '/* logo:start (written by tools/resize-icons.py) */\n:root { --mark: url(%s); --hero-logo: url(%s); --crown: url(%s); --cross: url(%s); }\n/* logo:end */' % (mark, hero, crown, cross)
 css = re.sub(r'/\* logo:start.*?logo:end \*/', lambda _: block, css, flags=re.S) if 'logo:start' in css else block + '\n' + css
 open(css_path, 'w').write(css)
 print('embedded logo images in coil.css')
