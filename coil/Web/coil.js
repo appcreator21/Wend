@@ -19,6 +19,7 @@
   const fmt = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   const params = new URLSearchParams(location.search);
   const ENV = params.get('env') || 'web';   // 'messages' (the iMessage extension), 'app' (the home-screen app) or 'web'
+  const AUTO = ENV === 'messages';          // inside Messages a finished turn is sent straight away, like GamePigeon
   const native = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.host;
 
   const store = {
@@ -278,7 +279,7 @@
       return;
     }
     card({ screen: 'waiting', score: duel.s, title: 'Their turn',
-      text: ENV === 'messages' ? 'If the message is still in the text field, tap the send arrow.\nYou get the next board when they have played.' : 'Waiting for the other player.',
+      text: ENV === 'messages' ? (rec.inserted ? 'If the message is still in the text field, tap the send arrow.\nYou get the next board when they have played.' : 'Sent. You get the next board when they have played.') : 'Waiting for the other player.',
       alt: rec.out ? ['Put the message back', send] : null });
   }
 
@@ -305,7 +306,8 @@
     }).catch(() => { home(); $('cardText').textContent = 'Could not build a board. Please try again.'; });
   }
 
-  function send() {
+  // `auto` is true only when the page sends by itself; the Send buttons pass a click event, which is not.
+  function send(auto) {
     const rec = loadRec(duel.id), P = unpack(rec.out);
     if (!P) return;
     const a = P.s[P.by], b = P.s[1 - P.by];
@@ -314,22 +316,31 @@
       ? { caption: a > b ? '{me} wins the duel ' + a + '–' + b : '{me} loses the duel ' + a + '–' + b, subcaption: 'Tap for a rematch', summary: 'Coil: the duel is over' }
       : { caption: 'Round ' + P.rd + ': beat ' + fmt(P.t), subcaption: line + ' · ' + NAMES[P.puzzle.difficulty], summary: 'Coil: your turn' };
     sending = duel.id;
-    Host.post(Object.assign(msg, { type: 'send', match: rec.out, image: bubbleImage(P), newSession: !!rec.fresh }));
+    Host.post(Object.assign(msg, { type: 'send', match: rec.out, image: bubbleImage(P), newSession: !!rec.fresh, auto: auto === true }));
+  }
+  // Inside Messages the turn goes out the moment the board is solved. If Messages refuses, the native side falls
+  // back to putting it in the text field, and if that fails too the Send button is still there.
+  function autoSend() {
+    const rec = loadRec(duel.id), P = unpack(rec.out);
+    if (!P) return;
+    card({ screen: 'send', score: P.s, busy: true, title: P.over ? 'Sending the result\u2026' : 'Sending your serve\u2026' });
+    send(true);
   }
   let sending = null;
   function onSent(ev) {
     if (!sending || !duel || duel.id !== sending) return;
     sending = null;
     if (!ev.ok) {
+      if (AUTO) { const r = loadRec(duel.id), Q = unpack(r.out); if (Q && Q.over) afterAnswer(); else if (Q) readyToSend(); }
       if (!ev.cancelled) $('cardText').textContent = ev.reason === 'unavailable' ? 'This device cannot send messages. Set up Messages and try again.' : 'Could not add the message to the conversation. Try again.';
       return;
     }
     const rec = loadRec(duel.id);
-    rec.sent = true; saveRec(duel.id, rec);
+    rec.sent = true; rec.inserted = !!ev.inserted; saveRec(duel.id, rec);
     S.matchStr = rec.out;
     const P = unpack(rec.out);
     duel.s = P.s;
-    if (P.over) { duel.P = P; over(P); $('cardText').textContent = 'Result ready. Tap the send arrow to deliver it.'; } else waiting();
+    if (P.over) { duel.P = P; over(P); $('cardText').textContent = ev.inserted ? 'Result ready. Tap the send arrow to deliver it.' : 'Result sent.'; } else waiting();
   }
 
   // The picture in the message bubble: the shape of the board (no letters, so nobody gets a head start) and the time to beat.
@@ -647,8 +658,8 @@
     setTimeout(() => {
       if (game !== g) return;
       stopGame();
-      if (g.kind === 'answer') afterAnswer();
-      else if (g.kind === 'serve') readyToSend();
+      if (g.kind === 'answer') { afterAnswer(); if (AUTO && loadRec(duel.id).out) autoSend(); }
+      else if (g.kind === 'serve') { if (AUTO) autoSend(); else readyToSend(); }
       else card({ screen: 'home', title: 'Solved in ' + fmt(time), text: 'Play another?', pick: (d) => serve(d, 'solo'), alt: ['Home', home] });
     }, params.has('fast') ? 0 : 1500);
   }

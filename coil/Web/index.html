@@ -13,20 +13,15 @@
 <main id="card" class="card" hidden>
   <div id="cardInner" class="card-inner">
     <div class="card-head">
-      <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path pathLength="1" d="M8 8h24v24H14V14h12v12h-6" /></svg><span>Coil</span></div>
+      <div class="brand"><span class="mark" aria-hidden="true"></span><span>Coil</span></div>
       <div id="score" class="score" hidden>
         <div class="side" id="sideMe"><small>You</small><b id="scoreMe">0</b><span id="pipsMe" class="pips" aria-hidden="true"></span></div>
         <i id="scoreNote"></i>
         <div class="side" id="sideThem"><small>Them</small><b id="scoreThem">0</b><span id="pipsThem" class="pips" aria-hidden="true"></span></div>
       </div>
     </div>
-    <div id="busy" class="busy" hidden aria-hidden="true"><svg viewBox="0 0 40 40"><path class="busy-track" d="M8 8h24v24H14V14h12v12h-6" /><path class="busy-draw" pathLength="1" d="M8 8h24v24H14V14h12v12h-6" /></svg></div>
-    <div id="hero" class="hero" hidden aria-hidden="true"><svg viewBox="-6 -6 212 212">
-      <rect class="h-frame" x="-6" y="-6" width="212" height="212" rx="34"/><rect class="h-cell" width="200" height="200" rx="28"/>
-      <polyline class="h-pill" pathLength="1" points="50,50 150,50 150,150 50,150"/>
-      <polyline class="h-chev" points="95,61 107,50 95,39"/><polyline class="h-chev" points="139,95 150,107 161,95"/><polyline class="h-chev" points="105,139 93,150 105,161"/>
-      <text x="50" y="52" style="--d:.2s">C</text><text x="150" y="52" style="--d:.42s">O</text><text x="150" y="152" style="--d:.64s">I</text><text x="50" y="152" style="--d:.86s">L</text>
-    </svg></div>
+    <div id="busy" class="busy" hidden aria-hidden="true"><span class="mark busy-mark"></span></div>
+    <div id="hero" class="hero" hidden aria-hidden="true"><span class="hero-logo"></span></div>
     <h1 id="cardTitle"></h1>
     <div id="stat" class="stat" hidden></div>
     <p id="cardLead" class="lead"></p>
@@ -86,7 +81,7 @@
 </main>
 
 <div id="resume" class="resume" hidden>
-  <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 8h24v24H14V14h12v12h-6" /></svg><span>Coil</span></div>
+  <div class="brand"><span class="mark" aria-hidden="true"></span><span>Coil</span></div>
   <button class="primary">Tap to keep playing</button>
 </div>
 

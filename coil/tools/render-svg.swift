@@ -1,9 +1,10 @@
-// Renders an SVG file to an opaque PNG with WebKit: swift render-svg.swift in.svg out.png width height
+// Renders an SVG file to a PNG with WebKit (opaque on black, or transparent): swift render-svg.swift in.svg out.png width height [transparent]
 import AppKit
 import WebKit
 
 let args = CommandLine.arguments
-guard args.count == 5, let w = Int(args[3]), let h = Int(args[4]) else { print("usage: render-svg in.svg out.png w h"); exit(2) }
+guard args.count >= 5, let w = Int(args[3]), let h = Int(args[4]) else { print("usage: render-svg in.svg out.png w h [transparent]"); exit(2) }
+let transparent = args.count > 5 && args[5] == "transparent"
 let svg = try String(contentsOfFile: args[1], encoding: .utf8)
 
 final class Renderer: NSObject, WKNavigationDelegate {
@@ -16,7 +17,7 @@ final class Renderer: NSObject, WKNavigationDelegate {
     func start() {
         view.navigationDelegate = self
         view.setValue(false, forKey: "drawsBackground")
-        view.loadHTMLString("<html><body style='margin:0;background:#000'>\(svg)</body></html>", baseURL: nil)
+        view.loadHTMLString("<html><body style='margin:0;background:\(transparent ? "transparent" : "#000")'>\(svg)</body></html>", baseURL: nil)
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [self] in

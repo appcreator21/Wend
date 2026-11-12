@@ -20,12 +20,19 @@ def write(folder, name, obj):
 
 info = {'author': 'xcode', 'version': 1}
 
-# Home-screen app: a single 1024 icon (Xcode 14+ makes the other sizes).
+# Home-screen app: one 1024 icon per appearance (Xcode makes the other sizes). Dark and tinted are what iOS 18+
+# shows in dark mode and when the user picks a tinted or clear home screen; the tinted one is plain grey.
 app = os.path.join(root, 'App', 'Assets.xcassets')
 write(app, 'Contents.json', {'info': info})
-write(os.path.join(app, 'AppIcon.appiconset'), 'Contents.json',
-      {'images': [{'filename': 'icon-1024.png', 'idiom': 'universal', 'platform': 'ios', 'size': '1024x1024'}], 'info': info})
-square.save(os.path.join(app, 'AppIcon.appiconset', 'icon-1024.png'))
+icon_dir = os.path.join(app, 'AppIcon.appiconset')
+write(icon_dir, 'Contents.json', {'images': [
+    {'filename': 'icon-1024.png', 'idiom': 'universal', 'platform': 'ios', 'size': '1024x1024'},
+    {'appearances': [{'appearance': 'luminosity', 'value': 'dark'}], 'filename': 'icon-1024-dark.png', 'idiom': 'universal', 'platform': 'ios', 'size': '1024x1024'},
+    {'appearances': [{'appearance': 'luminosity', 'value': 'tinted'}], 'filename': 'icon-1024-tinted.png', 'idiom': 'universal', 'platform': 'ios', 'size': '1024x1024'},
+], 'info': info})
+square.save(os.path.join(icon_dir, 'icon-1024.png'))
+load('icon-1024-dark.png', (1024, 1024)).save(os.path.join(icon_dir, 'icon-1024-dark.png'))
+load('icon-1024-tinted.png', (1024, 1024)).convert('L').convert('RGB').save(os.path.join(icon_dir, 'icon-1024-tinted.png'))
 
 # iMessage extension: the icon set Messages uses in the apps row and in Settings.
 ext = os.path.join(root, 'MessagesExtension', 'Assets.xcassets')
@@ -52,3 +59,30 @@ for idiom, w, h, scales, platform in entries:
         images.append(item)
 write(folder, 'Contents.json', {'images': images, 'info': info})
 print('wrote', len(done) + 1, 'icons')
+
+# The web game's apple-touch icons (Add to Home Screen on iOS) use the snake mascot, at the three sizes iOS asks for.
+mascot = load('snake-1024.png', (1024, 1024))
+web_icons = os.path.join(os.path.dirname(root), 'icons')
+for size, name in ((180, 'apple-touch-icon.png'), (167, 'apple-touch-icon-167.png'), (152, 'apple-touch-icon-152.png')):
+    mascot.resize((size, size), Image.LANCZOS).save(os.path.join(web_icons, name))
+print('wrote 3 apple-touch icons')
+
+# The app's own logo spots (Web/coil.css): the snake alone where the yellow spiral used to be, and the full icon on
+# the home screen. Embedded as data URIs so no new files have to be added to the Xcode project.
+import base64, io, re
+def data_uri(image):
+    buf = io.BytesIO(); image.save(buf, 'PNG', optimize=True)
+    return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+snake = Image.open(os.path.join(here, 'snake-mark.png')).convert('RGBA')
+snake = snake.crop(snake.getbbox())
+side = max(snake.size)
+square_mark = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+square_mark.paste(snake, ((side - snake.size[0]) // 2, (side - snake.size[1]) // 2))
+mark = data_uri(square_mark.resize((160, 160), Image.LANCZOS))
+hero = data_uri(mascot.resize((300, 300), Image.LANCZOS))
+css_path = os.path.join(root, 'Web', 'coil.css')
+css = open(css_path).read()
+block = '/* logo:start (written by tools/resize-icons.py) */\n:root { --mark: url(%s); --hero-logo: url(%s); }\n/* logo:end */' % (mark, hero)
+css = re.sub(r'/\* logo:start.*?logo:end \*/', lambda _: block, css, flags=re.S) if 'logo:start' in css else block + '\n' + css
+open(css_path, 'w').write(css)
+print('embedded logo images in coil.css')

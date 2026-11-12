@@ -121,15 +121,27 @@ final class MessagesViewController: MSMessagesAppViewController, GameHostDelegat
             return
         }
 
-        conversation.insert(message) { [weak self] error in
-            let ok = error == nil
+        // Inside Messages a finished turn is sent straight away, like GamePigeon. If Messages will not send it
+        // for us, it goes into the text field instead and the player taps the send arrow.
+        let finish: (Bool, Bool) -> Void = { [weak self] ok, inserted in
             Task { @MainActor in
                 guard let self = self else { return }
-                self.host.send(["type": "sent", "ok": ok])
+                self.host.send(["type": "sent", "ok": ok, "inserted": inserted])
                 if ok {
                     self.requestPresentationStyle(.compact)
                 }
             }
+        }
+        if body["auto"] as? Bool == true {
+            conversation.send(message) { error in
+                if error == nil {
+                    finish(true, false)
+                } else {
+                    conversation.insert(message) { insertError in finish(insertError == nil, true) }
+                }
+            }
+        } else {
+            conversation.insert(message) { error in finish(error == nil, true) }
         }
     }
 }
